@@ -1,98 +1,123 @@
-"use client";
-
-import { Fuel, ShoppingCart, ExternalLink, Info } from "lucide-react";
-import { ACCENT, AMBER } from "../../lib/tokens";
-
-/* =========================================================================
-   EVERYDAY SAVINGS — /savings
-   -------------------------------------------------------------------------
-   Curates two REAL, existing rebate programs into one page — especially
-   relevant for Encompass drivers, who spend on gas every single day.
-   This is NOT a new financial product; it's a curated links page, same
-   idea as any "best cashback apps" roundup.
-
-   BEFORE THIS GOES LIVE:
-   1. Apply to Ibotta's affiliate program and Upside's affiliate program
-      (not just personal referral codes, once you're promoting beyond
-      friends/family).
-   2. Replace the two placeholder URLs below with your real approved
-      affiliate links.
-   3. Keep the disclosure block — the FTC requires clear disclosure any
-      time you earn money from links you share.
-
-   File location: app/savings/page.js
-   No nav link needed — share the direct encompassrs.com/savings URL
-   wherever you want (driver group chats, app notifications, etc.)
-   ========================================================================= */
-
-// TODO: replace with your real approved affiliate links once accepted.
-const IBOTTA_LINK = "https://ibotta.com";
-const UPSIDE_LINK = "https://upside.com";
-
-function Card({ icon, title, blurb, bullets, href, color }) {
+export default function TermsOfService() {
   return (
-    <div className="flex-1 min-w-[280px] rounded-2xl p-6" style={{ background: "#1D2028", border: "1px solid #2B2F3A" }}>
-      <div className="w-12 h-12 rounded-full flex items-center justify-center mb-4" style={{ background: `${color}22` }}>
-        {icon}
-      </div>
-      <h3 className="text-lg font-semibold mb-2" style={{ color: "#F5F5F0" }}>{title}</h3>
-      <p className="text-sm mb-4 leading-relaxed" style={{ color: "#9CA0AA" }}>{blurb}</p>
-      <ul className="text-xs mb-6 space-y-1.5 list-disc pl-4" style={{ color: "#7A7F8A" }}>
-        {bullets.map((b) => <li key={b}>{b}</li>)}
-      </ul>
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer sponsored"
-        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold"
-        style={{ background: color, color: "#111318" }}
-      >
-        Get Started <ExternalLink size={14} />
-      </a>
+    <div className="max-w-3xl mx-auto px-4 py-12 text-gray-200">
+      <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
+      <p className="text-sm text-gray-400 mb-8">Last updated: July 29, 2026</p>
+
+      <p className="mb-6">
+        Welcome to Encompass Rideshare ("Encompass," "we," "us," or "our"). These Terms of
+        Service ("Terms") govern your access to and use of the Encompass mobile and web
+        applications, including our rider, driver, and Family Hub services (collectively, the
+        "Platform"). By creating an account or using the Platform, you agree to these Terms.
+        If you do not agree, do not use the Platform.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">1. What Encompass Is</h2>
+      <p className="mb-4">
+        Encompass is a technology platform that connects independent Riders seeking
+        transportation with independent Drivers who provide rides using their own vehicles.
+        Encompass does not itself provide transportation services, employ Drivers, or own any
+        vehicles. Drivers are independent contractors, not employees or agents of Encompass.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">2. Eligibility &amp; Accounts</h2>
+      <p className="mb-4">
+        You must be at least 18 years old to create a Rider, Driver, or Family Hub account.
+        You are responsible for maintaining the confidentiality of your account credentials
+        and for all activity that occurs under your account. You agree to provide accurate,
+        current information when creating and maintaining your account.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">3. Rider Terms</h2>
+      <p className="mb-4">
+        By requesting a ride, you authorize Encompass to charge your selected payment method
+        for the fare, applicable fees, and any tolls or surcharges. Fares are calculated based
+        on distance, time, vehicle type, and demand at the time of your request. Cancellation
+        fees may apply if you cancel a ride after a Driver has been assigned.
+      </p>
+      <p className="mb-4">
+        Riders may select round-trip options (same-driver-waits or two separate scheduled
+        rides) and, where eligible, a weekly flat-rate plan. Flat-rate plans are subject to
+        admin approval and apply only to standard vehicle rides within the scope described at
+        signup — they are not unlimited and do not apply to other vehicle types or job board
+        transactions.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">4. Driver Terms</h2>
+      <p className="mb-4">
+        Drivers are independent contractors solely responsible for their own vehicle,
+        insurance, licensing, and compliance with all applicable state and local
+        transportation laws. Encompass requires Drivers to complete a documentation and
+        verification process, including background check status, before activating an
+        account. Encompass reserves the right to suspend or deactivate any Driver account for
+        failure to meet safety, documentation, or conduct standards.
+      </p>
+      <p className="mb-4">
+        Driver payouts are processed through our third-party payment partner, Stripe, via
+        Stripe Connect. Drivers are responsible for their own tax obligations as independent
+        contractors, including any applicable 1099 reporting.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">5. Job Board</h2>
+      <p className="mb-4">
+        The Job Board allows Drivers to post and claim cargo/delivery opportunities on a
+        first-come, first-served basis. Encompass is not a party to any agreement formed
+        between Drivers through the Job Board and is not responsible for the performance,
+        payment, or safety of any job posted or claimed there.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">6. Family Hub</h2>
+      <p className="mb-4">
+        Family Hub allows a Guardian to create a family group and invite Members via a private
+        invite code. Guardians can view ride activity and live location for Members during
+        active rides, and may remove Members from the family group at any time. By joining a
+        family group as a Member, you consent to this visibility for as long as you remain a
+        Member.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">7. Payments</h2>
+      <p className="mb-4">
+        All payments on the Platform are processed through Stripe. By using the Platform, you
+        also agree to Stripe's terms of service applicable to payment processing. Encompass
+        does not store your full payment card details.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">8. Prohibited Conduct</h2>
+      <p className="mb-4">
+        You agree not to use the Platform for any unlawful purpose, to harass or endanger
+        another user, to provide false information, or to attempt to circumvent Encompass's
+        payment systems (e.g., arranging off-platform payment to avoid fees).
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">9. Disclaimers &amp; Limitation of Liability</h2>
+      <p className="mb-4">
+        THE PLATFORM IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. ENCOMPASS DOES NOT
+        GUARANTEE THE AVAILABILITY, SAFETY, OR CONDUCT OF ANY RIDER OR DRIVER. TO THE MAXIMUM
+        EXTENT PERMITTED BY LAW, ENCOMPASS'S TOTAL LIABILITY FOR ANY CLAIM ARISING FROM YOUR
+        USE OF THE PLATFORM SHALL NOT EXCEED THE AMOUNT YOU PAID TO ENCOMPASS IN THE THREE
+        MONTHS PRECEDING THE CLAIM.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">10. Termination</h2>
+      <p className="mb-4">
+        Encompass may suspend or terminate your account at any time for violation of these
+        Terms, safety concerns, or fraudulent activity. You may stop using the Platform and
+        request account deletion at any time by contacting us.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">11. Changes to These Terms</h2>
+      <p className="mb-4">
+        We may update these Terms from time to time. Continued use of the Platform after
+        changes take effect constitutes acceptance of the revised Terms.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">12. Contact</h2>
+      <p className="mb-4">
+        Questions about these Terms can be directed to{" "}
+        <a href="mailto:support@encompassrs.com" className="text-blue-400 underline">
+          support@encompassrs.com
+        </a>.
+      </p>
     </div>
   );
-}
-
-export default function SavingsPage() {
-  return (
-    <div className="min-h-screen w-full px-6 py-16" style={{ background: "#111318" }}>
-      <div className="max-w-3xl mx-auto">
-        <div className="text-center mb-10">
-          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: ACCENT }}>Encompass Savings</p>
-          <h1 className="text-3xl md:text-4xl font-semibold mb-3" style={{ color: "#F5F5F0" }}>
-            Save on the things you already buy.
-          </h1>
-          <p className="text-sm md:text-base max-w-lg mx-auto" style={{ color: "#9CA0AA" }}>
-            Gas and groceries — two real cashback programs, bundled in one place, especially useful if you're driving every day.
-          </p>
-        </div>
-
-        <div className="flex gap-5 flex-wrap mb-8">
-          <Card
-            icon={<Fuel size={20} color={ACCENT} />}
-            title="Gas Cashback — Upside"
-            blurb="Real cash back every time you fill up, funded by the gas station — not by other members. Built for people who drive a lot."
-            bullets={["Free to join", "Cash back on every fill-up", "No monthly fee"]}
-            href={UPSIDE_LINK}
-            color={ACCENT}
-          />
-          <Card
-            icon={<ShoppingCart size={20} color={AMBER} />}
-            title="Grocery & Retail Cashback — Ibotta"
-            blurb="Cash back at Walmart, Target, Kroger, and 300+ other stores on things you're already buying."
-            bullets={["Free to join", "300+ participating stores", "Cash out anytime"]}
-            href={IBOTTA_LINK}
-            color={AMBER}
-          />
-        </div>
-
-        <div className="rounded-xl p-4 flex gap-3" style={{ background: "#1D2028", border: "1px solid #2B2F3A" }}>
-          <Info size={16} color="#7A7F8A" className="flex-shrink-0 mt-0.5" />
-          <p className="text-xs leading-relaxed" style={{ color: "#7A7F8A" }}>
-            <strong style={{ color: "#9CA0AA" }}>Disclosure:</strong> The links above are referral/affiliate links. If you sign up through them, Encompass may earn a commission from Upside or Ibotta at no extra cost to you — this doesn't affect the cash back you earn. We don't operate, control, or guarantee either program; all rewards are provided directly by Upside and Ibotta under their own terms.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+          }
