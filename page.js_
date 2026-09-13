@@ -1,0 +1,87 @@
+import { ACCENT, AMBER } from "../../lib/tokens";
+
+export const metadata = {
+  title: "About — Encompass",
+  description: "Rides, work, and family — covered.",
+};
+
+function Section({ eyebrow, title, children }) {
+  return (
+    <section className="max-w-2xl mx-auto px-6 py-10 border-t" style={{ borderColor: "#2B2F3A" }}>
+      <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: ACCENT }}>
+        {eyebrow}
+      </p>
+      <h2 className="text-xl font-semibold mb-3" style={{ color: "#F5F5F0" }}>
+        {title}
+      </h2>
+      <div className="text-[15px] leading-relaxed" style={{ color: "#B9BBC2" }}>
+        {children}
+      </div>
+    </section>
+  );
+}
+
+export default function AboutPage() {
+  return (
+    <div className="min-h-screen" style={{ background: "#111318" }}>
+      <div className="max-w-2xl mx-auto px-6 pt-16 pb-10">
+        <p className="text-xs font-semibold uppercase tracking-wide mb-4" style={{ color: AMBER }}>
+          About Encompass
+        </p>
+        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight leading-tight mb-5" style={{ color: "#F5F5F0" }}>
+          Everyone gets there.
+          <br />
+          Everyone gets seen.
+        </h1>
+        <p className="text-base leading-relaxed" style={{ color: "#B9BBC2" }}>
+          Most rideshare apps treat you like a single transaction — a pickup, a drop-off, a rating
+          that disappears the moment the trip ends. Encompass was built differently, because the
+          people who use it aren't just riders. They're parents, spouses, teenagers learning to
+          drive for the first time, and neighbors hauling a couch across town on a Saturday.
+        </p>
+      </div>
+
+      <Section eyebrow="The name" title="What Encompass actually means">
+        <p>
+          The name comes from what the word actually means: to cover, to include, to hold
+          everything together. That's the whole idea. One platform for getting a ride, finding
+          honest work behind the wheel of a truck or cargo van, and keeping a family connected to
+          what matters — without turning it into a surveillance tool.
+        </p>
+      </Section>
+
+      <Section eyebrow="Rides" title="Priced fairly, rated both ways">
+        <p>
+          Standard, XL, Truck, and Cargo Van — priced fairly, tracked honestly, rated both ways.
+          A driver's rating means something here because riders rate drivers, and drivers rate
+          riders too.
+        </p>
+      </Section>
+
+      <Section eyebrow="Work" title="Work, not just gigs">
+        <p>
+          Anyone with a Cargo Van or Truck can pick up real hauling and moving jobs — posted by
+          real people in the community, first-come, first-served, no bidding wars.
+        </p>
+      </Section>
+
+      <Section eyebrow="Family Hub" title="Parental control, built in">
+        <p>
+          A parent shouldn't need a separate app, a separate password, and a separate leap of
+          faith every time their teenager gets in a car. Family Hub links everyone's activity —
+          rides taken, jobs worked, and yes, a live view when a ride is actually in progress — into
+          one place. Not tracking for tracking's sake. Peace of mind, on purpose.
+        </p>
+      </Section>
+
+      <section className="max-w-2xl mx-auto px-6 py-12 border-t" style={{ borderColor: "#2B2F3A" }}>
+        <p className="text-base font-medium" style={{ color: "#F5F5F0" }}>
+          Trust isn't a feature you bolt on later.
+        </p>
+        <p className="text-base" style={{ color: "#7A7F8A" }}>
+          It's the reason anyone opens the app a second time.
+        </p>
+      </section>
+    </div>
+  );
+}
