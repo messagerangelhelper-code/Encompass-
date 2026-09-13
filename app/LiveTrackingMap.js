@@ -1,7 +1,7 @@
 
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { subscribeToFamilyActiveRide } from "../../lib/supabase-db";
+import { subscribeToFamilyActiveRide } from "../lib/supabase-db";
 let mapboxLoadingPromise = null;
 function loadMapboxGL() {
   if (window.mapboxgl) return Promise.resolve();
