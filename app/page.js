@@ -5,7 +5,7 @@ import CityMap from './CityMap';
 import LiveTrackingMap from './LiveTrackingMap';
 import HowToBookModal from './HowToBookModal';
 import ChatPanel from './ChatPanel';
-
+export const dynamic = 'force-dynamic';
 export default function HomePage() {
   const [rideBooked, setRideBooked] = useState(false);
   const [showChat, setShowChat] = useState(false);
