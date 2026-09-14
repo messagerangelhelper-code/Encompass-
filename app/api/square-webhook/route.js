@@ -1,13 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
-
-import crypto from "crypto";
-
 function verifySignature(rawBody, signatureHeader, notificationUrl) {
   const hmac = crypto.createHmac("sha256", process.env.SQUARE_WEBHOOK_SIGNATURE_KEY);
   hmac.update(notificationUrl + rawBody);
@@ -41,11 +34,6 @@ export async function POST(request) {
   );
 
   const rawBody = await request.text();
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-
-  const rawBody = await request.text();
   const signatureHeader = request.headers.get("x-square-hmacsha256-signature");
   const notificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/square-webhook`;
 
@@ -71,7 +59,6 @@ export async function POST(request) {
   }
 
   try {
-    // Look up the order to get our reference_id (the booking token)
     const orderRes = await fetch(`https://connect.squareup.com/v2/orders/${payment.order_id}`, {
       headers: {
         "Square-Version": "2024-06-20",
@@ -97,12 +84,9 @@ export async function POST(request) {
     }
 
     if (booking.ride_id) {
-      // Already processed (Square can send duplicate webhook deliveries) —
-      // safe to just acknowledge and stop.
       return Response.json({ received: true });
     }
 
-    // Sanity check: the amount actually paid should match what we quoted.
     const paidCents = payment.amount_money?.amount || 0;
     const expectedCents = Math.round(Number(booking.fare) * 100);
     if (paidCents !== expectedCents) {
@@ -110,7 +94,6 @@ export async function POST(request) {
       return Response.json({ received: true });
     }
 
-    // Payment confirmed — NOW the ride actually gets created.
     const { data: newRide, error: insertError } = await supabase
       .from("rides")
       .insert(toSnakeCasePatch(booking.ride_data))
