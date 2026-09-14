@@ -17,9 +17,6 @@ export async function POST(request) {
     const amountInCents = Math.round(fare * 100);
     const token = crypto.randomUUID();
 
-    // Store the full ride details now, under this token — nothing is written
-    // to the real `rides` table yet. Only the webhook (once Square confirms
-    // the payment actually went through) will create the real ride.
     const rideData = {
       riderName: body.riderName || "Rider",
       riderUid: body.riderUid || crypto.randomUUID(),
@@ -45,9 +42,6 @@ export async function POST(request) {
       return Response.json({ error: "Couldn't set up booking" }, { status: 500 });
     }
 
-    // Create the payment link with the order built inline (location, our
-    // reference token, and the line item) all in one call — this avoids the
-    // separate order-creation step and the field mismatches that came with it.
     const linkRes = await fetch("https://connect.squareup.com/v2/online-checkout/payment-links", {
       method: "POST",
       headers: {
@@ -58,30 +52,4 @@ export async function POST(request) {
       body: JSON.stringify({
         idempotency_key: `link-${token}`,
         order: {
-          location_id: process.env.SQUARE_LOCATION_ID,
-          reference_id: token,
-          line_items: [
-            {
-              name: `Encompass Rideshare — ${body.destination || "Ride"}`,
-              quantity: "1",
-              base_price_money: { amount: amountInCents, currency: "USD" },
-            },
-          ],
-        },
-        checkout_options: {
-          redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}${body.returnTo || "/rider"}?payment=pending&token=${token}`,
-        },
-      }),
-    });
-    const linkData = await linkRes.json();
-    if (!linkRes.ok) {
-      console.error("Square payment link error:", linkData);
-      return Response.json({ error: linkData.errors?.[0]?.detail || "Couldn't create payment link" }, { status: 500 });
-    }
-
-    return Response.json({ url: linkData.payment_link.url });
-  } catch (err) {
-    console.error("Payment link error:", err);
-    return Response.json({ error: err.message || "Unknown error" }, { status: 500 });
-  }
-          }
+          lo
