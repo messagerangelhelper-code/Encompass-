@@ -6,9 +6,7 @@ export async function POST(request) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
-  try {
-
-export async function POST(request) {
+  export async function POST(request) {
   try {
     const body = await request.json();
     const { fare } = body;
