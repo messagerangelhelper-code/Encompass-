@@ -52,4 +52,30 @@ export async function POST(request) {
       body: JSON.stringify({
         idempotency_key: `link-${token}`,
         order: {
-          lo
+          location_id: process.env.SQUARE_LOCATION_ID,
+          reference_id: token,
+          line_items: [
+            {
+              name: `Encompass Rideshare — ${body.destination || "Ride"}`,
+              quantity: "1",
+              base_price_money: { amount: amountInCents, currency: "USD" },
+            },
+          ],
+        },
+        checkout_options: {
+          redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}${body.returnTo || "/rider"}?payment=pending&token=${token}`,
+        },
+      }),
+    });
+    const linkData = await linkRes.json();
+    if (!linkRes.ok) {
+      console.error("Square payment link error:", linkData);
+      return Response.json({ error: linkData.errors?.[0]?.detail || "Couldn't create payment link" }, { status: 500 });
+    }
+
+    return Response.json({ url: linkData.payment_link.url });
+  } catch (err) {
+    console.error("Payment link error:", err);
+    return Response.json({ error: err.message || "Unknown error" }, { status: 500 });
+  }
+}
