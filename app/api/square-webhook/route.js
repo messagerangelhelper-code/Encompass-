@@ -33,6 +33,11 @@ function toSnakeCasePatch(ride) {
 }
 
 export async function POST(request) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
   const rawBody = await request.text();
   const signatureHeader = request.headers.get("x-square-hmacsha256-signature");
   const notificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/square-webhook`;
