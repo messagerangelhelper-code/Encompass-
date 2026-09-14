@@ -6,6 +6,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
+import crypto from "crypto";
+
 function verifySignature(rawBody, signatureHeader, notificationUrl) {
   const hmac = crypto.createHmac("sha256", process.env.SQUARE_WEBHOOK_SIGNATURE_KEY);
   hmac.update(notificationUrl + rawBody);
@@ -34,6 +36,11 @@ function toSnakeCasePatch(ride) {
 
 export async function POST(request) {
   const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  const rawBody = await request.text();
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
