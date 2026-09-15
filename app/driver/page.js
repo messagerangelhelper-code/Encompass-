@@ -83,3 +83,79 @@ export default function DriverPage() {
     await updateRide(activeRide.id, { status: "completed" });
   };
   const finishAndReset = () => setActiveRide(null);
+if (!driver) {
+    return (
+      <main className="min-h-screen flex items-center justify-center p-6" style={{ background: "#111318" }}>
+        <form onSubmit={handleAuth} className="w-full max-w-sm space-y-3">
+          <h1 className="text-xl font-bold mb-4" style={{ color: "#F5F5F0" }}>
+            {authMode === "login" ? "Driver Login" : "Driver Sign Up"}
+          </h1>
+          {authMode === "signup" && (
+            <>
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name"
+                className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+              <input value={carModel} onChange={(e) => setCarModel(e.target.value)} placeholder="Car model"
+                className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+              <input value={plate} onChange={(e) => setPlate(e.target.value)} placeholder="License plate"
+                className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+            </>
+          )}
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email"
+            className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password"
+            className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+          {authError && <p className="text-xs" style={{ color: "#ff6b6b" }}>{authError}</p>}
+          <button type="submit" className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+            {authMode === "login" ? "Log In" : "Sign Up"}
+          </button>
+          <button type="button" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
+            className="w-full text-xs" style={{ color: "#7A7F8A" }}>
+            {authMode === "login" ? "Need an account? Sign up" : "Have an account? Log in"}
+          </button>
+        </form>
+      </main>
+    );
+  }
+
+  if (driver.pending_approval) {
+    return (
+      <main className="min-h-screen p-6 space-y-4" style={{ background: "#111318" }}>
+        <h1 className="text-lg font-bold" style={{ color: "#F5F5F0" }}>Welcome, {driver.name}</h1>
+        <p className="text-sm" style={{ color: "#7A7F8A" }}>
+          Your account is pending approval. Document status: {driver.documents_status}
+        </p>
+        <PayoutSetupBanner driverProfile={driver} />
+      </main>
+    );
+  }
+
+  if (!activeRide) {
+    return (
+      <main className="min-h-screen p-6 space-y-4" style={{ background: "#111318" }}>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold" style={{ color: "#F5F5F0" }}>Hi, {driver.name}</h1>
+          <button onClick={toggleOnline}
+            className="px-4 py-2 rounded-full text-xs font-semibold"
+            style={{ background: online ? ACCENT : "#1D2028", color: online ? "#111318" : "#7A7F8A", border: "1px solid #2B2F3A" }}>
+            {online ? "Online" : "Offline"}
+          </button>
+        </div>
+
+        <PayoutSetupBanner driverProfile={driver} />
+
+        {!online && <p className="text-xs" style={{ color: "#7A7F8A" }}>Go online to start receiving ride requests.</p>}
+        {online && !pendingRide && <p className="text-xs" style={{ color: "#7A7F8A" }}>Waiting for a ride request…</p>}
+
+        {pendingRide && (
+          <div className="p-4 rounded-xl" style={{ background: "#1D2028", border: `1px solid ${ACCENT}` }}>
+            <p className="text-sm font-semibold" style={{ color: "#F5F5F0" }}>New ride request</p>
+            <p className="text-xs mt-1" style={{ color: "#7A7F8A" }}>To: {pendingRide.destination}</p>
+            <p className="text-xs" style={{ color: "#7A7F8A" }}>Fare: ${Number(pendingRide.fare).toFixed(2)}</p>
+            <button onClick={acceptRide} className="w-full mt-3 py-2.5 rounded-xl text-sm font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+              Accept
+            </button>
+          </div>
+        )}
+      </main>
+    );
+  }
