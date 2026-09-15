@@ -4,8 +4,11 @@ import CityMap from "../CityMap";
 import ChatPanel from "../ChatPanel";
 import { ACCENT } from "../../lib/tokens";
 import {
-  loginRider, signUpRider, createRide, subscribeToRide, rateDriver,
+  import {
+  loginRider, signUpRider, sendMagicLinkRider, completeMagicLinkSignInRider,
+  createRide, subscribeToRide, rateDriver,
 } from "../../lib/supabase-db";
+
 import { fareForTrip } from "../../lib/fare";
 
 export default function RiderPage() {
@@ -33,6 +36,8 @@ export default function RiderPage() {
     return unsub;
   }, [ride?.id]);
 
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
+
   const handleAuth = async (e) => {
     e.preventDefault();
     setAuthError("");
@@ -46,6 +51,20 @@ export default function RiderPage() {
       }
     } catch (err) {
       setAuthError(err.message || "Something went wrong.");
+    }
+  };
+
+  const sendMagicLink = async () => {
+    setAuthError("");
+    if (!email) {
+      setAuthError("Enter your email first.");
+      return;
+    }
+    try {
+      await sendMagicLinkRider(email);
+      setMagicLinkSent(true);
+    } catch (err) {
+      setAuthError(err.message || "Couldn't send magic link.");
     }
   };
 
@@ -82,6 +101,11 @@ export default function RiderPage() {
           <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password"
             className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
           {authError && <p className="text-xs" style={{ color: "#ff6b6b" }}>{authError}</p>}
+          {magicLinkSent && <p className="text-xs" style={{ color: ACCENT }}>Check your email for a login link.</p>}
+            <button type="button" onClick={sendMagicLink}
+            className="w-full py-2.5 rounded-xl text-xs font-semibold" style={{ background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}` }}>
+            Email me a login link instead
+          </button>
           <button type="submit" className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: ACCENT, color: "#111318" }}>
             {authMode === "login" ? "Log In" : "Sign Up"}
           </button>
