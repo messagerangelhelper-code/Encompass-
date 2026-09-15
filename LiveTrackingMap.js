@@ -1,26 +1,28 @@
-
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { subscribeToFamilyActiveRide } from "../lib/supabase-db";
-let mapboxLoadingPromise = null;
-function loadMapboxGL() {
-  if (window.mapboxgl) return Promise.resolve();
-  if (mapboxLoadingPromise) return mapboxLoadingPromise;
-  mapboxLoadingPromise = new Promise((resolve, reject) => {
+
+let maplibreLoadingPromise = null;
+function loadMapLibreGL() {
+  if (window.maplibregl) return Promise.resolve();
+  if (maplibreLoadingPromise) return maplibreLoadingPromise;
+  maplibreLoadingPromise = new Promise((resolve, reject) => {
     const css = document.createElement("link");
     css.rel = "stylesheet";
-    css.href = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css";
+    css.href = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
     document.head.appendChild(css);
 
     const script = document.createElement("script");
-    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
+    script.src = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
     script.async = true;
     script.onload = resolve;
     script.onerror = reject;
     document.head.appendChild(script);
   });
-  return mapboxLoadingPromise;
+  return maplibreLoadingPromise;
 }
+
+const MAP_STYLE = "https://demotiles.maplibre.org/style.json";
 
 export default function LiveTrackingMap({ memberUids }) {
   const mapRef = useRef(null);
@@ -35,22 +37,21 @@ export default function LiveTrackingMap({ memberUids }) {
   }, [memberUids]);
 
   useEffect(() => {
-    loadMapboxGL().then(() => setReady(true));
+    loadMapLibreGL().then(() => setReady(true));
   }, []);
 
   useEffect(() => {
     if (!ready || !activeRide?.driverLocation || !mapRef.current) return;
     const { lat, lng } = activeRide.driverLocation;
-    window.mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
     if (!mapInstance.current) {
-      mapInstance.current = new window.mapboxgl.Map({
+      mapInstance.current = new window.maplibregl.Map({
         container: mapRef.current,
-        style: "mapbox://styles/mapbox/dark-v11",
+        style: MAP_STYLE,
         center: [lng, lat],
         zoom: 15,
       });
-      markerInstance.current = new window.mapboxgl.Marker({ color: "#6C5CE7" })
+      markerInstance.current = new window.maplibregl.Marker({ color: "#6C5CE7" })
         .setLngLat([lng, lat])
         .addTo(mapInstance.current);
     } else {
