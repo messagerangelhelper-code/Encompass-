@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import CityMap from "../CityMap";
 import ChatPanel from "../ChatPanel";
-import PayoutSetupBanner from "../PayoutSetupBanner";
+import <PayoutSetupBanner driverProfile={driver} />
 import { ACCENT } from "../../lib/tokens";
 import {
   loginDriver, signUpDriver, subscribeToNextPendingRide, subscribeToRide,
