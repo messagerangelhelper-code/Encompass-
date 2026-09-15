@@ -25,21 +25,18 @@ export default function DriverPage() {
   const [showChat, setShowChat] = useState(false);
   const watchIdRef = useRef(null);
 
-  // Listen for a new pending ride once online (and not already on a trip)
   useEffect(() => {
     if (!driver || !online || activeRide) return;
     const unsub = subscribeToNextPendingRide("standard", setPendingRide);
     return unsub;
   }, [driver, online, activeRide]);
 
-  // Keep the active ride's live status in sync
   useEffect(() => {
     if (!activeRide?.id) return;
     const unsub = subscribeToRide(activeRide.id, setActiveRide);
     return unsub;
   }, [activeRide?.id]);
 
-  // Share GPS location to Supabase every few seconds while on an active ride
   useEffect(() => {
     if (!activeRide || activeRide.status === "completed") {
       if (watchIdRef.current) navigator.geolocation.clearWatch(watchIdRef.current);
@@ -76,4 +73,5 @@ export default function DriverPage() {
   };
 
   const acceptRide = async () => {
-    await updateRide(pendingRide.id, { status: "accepted", driverUid: driver.uid, driverName: d
+    await updateRide(pendingRide.id, { status: "accepted", driverUid: driver.uid, driverName: driver.name });
+    setActiveRide({ ...pendingRide,
