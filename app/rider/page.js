@@ -4,7 +4,7 @@ import CityMap from "../CityMap";
 import ChatPanel from "../ChatPanel";
 import { ACCENT } from "../../lib/tokens";
 import {
-  import {
+  
   loginRider, signUpRider, sendMagicLinkRider, completeMagicLinkSignInRider,
   createRide, subscribeToRide, rateDriver,
 } from "../../lib/supabase-db";
