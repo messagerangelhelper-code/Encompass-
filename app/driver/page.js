@@ -74,4 +74,12 @@ export default function DriverPage() {
 
   const acceptRide = async () => {
     await updateRide(pendingRide.id, { status: "accepted", driverUid: driver.uid, driverName: driver.name });
-    setActiveRide({ ...pendingRide,
+    setActiveRide({ ...pendingRide, status: "accepted", driver_uid: driver.uid, driver_name: driver.name });
+    setPendingRide(null);
+  };
+
+  const startTrip = () => updateRide(activeRide.id, { status: "in_progress" });
+  const completeTrip = async () => {
+    await updateRide(activeRide.id, { status: "completed" });
+  };
+  const finishAndReset = () => setActiveRide(null);
