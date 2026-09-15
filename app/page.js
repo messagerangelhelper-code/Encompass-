@@ -1,46 +1,27 @@
-'use client';
-
-import { useState } from 'react';
-import CityMap from './CityMap';
-import LiveTrackingMap from './LiveTrackingMap';
-import HowToBookModal from './HowToBookModal';
-import ChatPanel from './ChatPanel';
+"use client";
+import Link from "next/link";
+import { ACCENT } from "../lib/tokens";
 
 export const dynamic = 'force-dynamic';
 
-function ErrorDisplay({ error }) {
-  return (
-    <div style={{ padding: 20, color: '#fff', background: '#111318', minHeight: '100vh' }}>
-      <h2 style={{ color: '#ff6b6b', marginBottom: 10 }}>Client Error:</h2>
-      <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12 }}>{error?.message}</pre>
-      <pre style={{ whiteSpace: 'pre-wrap', fontSize: 10, color: '#999', marginTop: 10 }}>{error?.stack}</pre>
-    </div>
-  );
-}
-
 export default function HomePage() {
-  const [rideBooked, setRideBooked] = useState(false);
-  const [showChat, setShowChat] = useState(false);
-  const [error, setError] = useState(null);
+  return (
+    <main className="min-h-screen flex flex-col items-center justify-center p-6" style={{ background: "#111318" }}>
+      <h1 className="text-3xl font-bold mb-2" style={{ color: "#F5F5F0" }}>Encompass</h1>
+      <p className="text-sm mb-10" style={{ color: "#7A7F8A" }}>Rideshare, on your terms.</p>
 
-  if (error) return <ErrorDisplay error={error} />;
-
-  try {
-    return (
-      <main className="relative w-full h-screen bg-[#111318]">
-        <CityMap />
-
-        {rideBooked && <LiveTrackingMap />}
-
-        {!rideBooked && (
-          <HowToBookModal onBook={() => setRideBooked(true)} />
-        )}
-
-        {rideBooked && showChat && <ChatPanel />}
-      </main>
-    );
-  } catch (err) {
-    setError(err);
-    return null;
-  }
+      <div className="w-full max-w-xs space-y-3">
+        <Link href="/rider">
+          <button className="w-full py-4 rounded-xl text-sm font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+            I'm a Rider
+          </button>
+        </Link>
+        <Link href="/driver">
+          <button className="w-full py-4 rounded-xl text-sm font-semibold" style={{ background: "#1D2028", color: ACCENT, border: `1px solid ${ACCENT}` }}>
+            I'm a Driver
+          </button>
+        </Link>
+      </div>
+    </main>
+  );
 }
