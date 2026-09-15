@@ -4,20 +4,16 @@ import CityMap from "../CityMap";
 import ChatPanel from "../ChatPanel";
 import { ACCENT } from "../../lib/tokens";
 import {
-  
-  loginRider, signUpRider, sendMagicLinkRider, completeMagicLinkSignInRider,
+  sendMagicLinkRider, completeMagicLinkSignInRider,
   createRide, subscribeToRide, rateDriver,
 } from "../../lib/supabase-db";
-
 import { fareForTrip } from "../../lib/fare";
 
 export default function RiderPage() {
   const [rider, setRider] = useState(null);
-  const [authMode, setAuthMode] = useState("login");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [authError, setAuthError] = useState("");
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const [pickupLat, setPickupLat] = useState("");
   const [pickupLng, setPickupLng] = useState("");
@@ -31,28 +27,14 @@ export default function RiderPage() {
   const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
+    completeMagicLinkSignInRider().then((r) => { if (r) setRider(r); });
+  }, []);
+
+  useEffect(() => {
     if (!ride?.id) return;
     const unsub = subscribeToRide(ride.id, setRide);
     return unsub;
   }, [ride?.id]);
-
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-
-  const handleAuth = async (e) => {
-    e.preventDefault();
-    setAuthError("");
-    try {
-      if (authMode === "login") {
-        const r = await loginRider({ email, password });
-        setRider(r);
-      } else {
-        const r = await signUpRider({ name, email, password });
-        setRider(r);
-      }
-    } catch (err) {
-      setAuthError(err.message || "Something went wrong.");
-    }
-  };
 
   const sendMagicLink = async () => {
     setAuthError("");
@@ -88,32 +70,30 @@ export default function RiderPage() {
   if (!rider) {
     return (
       <main className="min-h-screen flex items-center justify-center p-6" style={{ background: "#111318" }}>
-        <form onSubmit={handleAuth} className="w-full max-w-sm space-y-3">
-          <h1 className="text-xl font-bold mb-4" style={{ color: "#F5F5F0" }}>
-            {authMode === "login" ? "Rider Login" : "Rider Sign Up"}
-          </h1>
-          {authMode === "signup" && (
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name"
-              className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
-          )}
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" type="email"
-            className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
-          <input value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" type="password"
-            className="w-full px-4 py-3 rounded-xl text-sm" style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+        <div className="w-full max-w-sm space-y-4 text-center">
+          <h1 className="text-2xl font-bold" style={{ color: "#F5F5F0" }}>Encompass</h1>
+          <p className="text-sm" style={{ color: "#7A7F8A" }}>Rideshare, on your terms.</p>
+
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            type="email"
+            className="w-full px-4 py-3 rounded-xl text-sm text-center"
+            style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }}
+          />
+
           {authError && <p className="text-xs" style={{ color: "#ff6b6b" }}>{authError}</p>}
           {magicLinkSent && <p className="text-xs" style={{ color: ACCENT }}>Check your email for a login link.</p>}
-            <button type="button" onClick={sendMagicLink}
-            className="w-full py-2.5 rounded-xl text-xs font-semibold" style={{ background: "transparent", color: ACCENT, border: `1px solid ${ACCENT}` }}>
-            Email me a login link instead
+
+          <button
+            onClick={sendMagicLink}
+            className="w-full py-4 rounded-xl text-sm font-semibold"
+            style={{ background: ACCENT, color: "#111318" }}
+          >
+            Encompass Rideshare
           </button>
-          <button type="submit" className="w-full py-3 rounded-xl text-sm font-semibold" style={{ background: ACCENT, color: "#111318" }}>
-            {authMode === "login" ? "Log In" : "Sign Up"}
-          </button>
-          <button type="button" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}
-            className="w-full text-xs" style={{ color: "#7A7F8A" }}>
-            {authMode === "login" ? "Need an account? Sign up" : "Have an account? Log in"}
-          </button>
-        </form>
+        </div>
       </main>
     );
   }
