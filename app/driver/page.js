@@ -159,3 +159,52 @@ if (!driver) {
       </main>
     );
   }
+const pickupPos = activeRide.pickup_location;
+  const dropoffPos = activeRide.dropoff_location;
+
+  return (
+    <main className="relative w-full h-screen" style={{ background: "#111318" }}>
+      <CityMap pickupPos={pickupPos} dropoffPos={dropoffPos} showRoute markerColor={ACCENT} />
+      <div className="absolute top-6 left-4 right-4 p-4 rounded-xl" style={{ background: "#1D2028", border: "1px solid #2B2F3A" }}>
+        <p className="text-sm font-semibold" style={{ color: "#F5F5F0" }}>{activeRide.rider_name}</p>
+        <p className="text-xs mt-1" style={{ color: "#7A7F8A" }}>To: {activeRide.destination}</p>
+        <p className="text-xs" style={{ color: "#7A7F8A" }}>Fare: ${Number(activeRide.fare).toFixed(2)}</p>
+
+        <div className="flex gap-2 mt-3">
+          <button onClick={() => setShowChat(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: "#111318", color: ACCENT, border: `1px solid ${ACCENT}` }}>
+            Chat
+          </button>
+          {activeRide.status === "accepted" && (
+            <button onClick={startTrip} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+              Start Trip
+            </button>
+          )}
+          {activeRide.status === "in_progress" && (
+            <button onClick={completeTrip} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+              Complete Trip
+            </button>
+          )}
+        </div>
+
+        {activeRide.status === "completed" && (
+          <div className="mt-3">
+            <p className="text-xs mb-2" style={{ color: "#7A7F8A" }}>Rate rider:</p>
+            <div className="flex gap-2 mb-2">
+              {[1, 2, 3, 4, 5].map((n) => (
+                <button key={n} onClick={() => rateRider(activeRide.id, activeRide.rider_uid, n)} className="text-lg">⭐</button>
+              ))}
+            </div>
+            <button onClick={finishAndReset} className="w-full py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+              Done — back online
+            </button>
+          </div>
+        )}
+      </div>
+
+      {showChat && (
+        <ChatPanel rideId={activeRide.id} mySender="driver" otherName={activeRide.rider_name}
+          quickReplies={["On my way", "I've arrived", "Running late"]} onClose={() => setShowChat(false)} />
+      )}
+    </main>
+  );
+          }
