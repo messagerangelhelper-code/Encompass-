@@ -157,41 +157,4 @@ export default function RiderPage() {
     </main>
   );
 }
-// ---------- Rider auth (magic link) ----------
-export async function sendMagicLinkRider(email) {
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: {
-      emailRedirectTo: `${window.location.origin}/rider`,
-    },
-  });
-  if (error) throw error;
-}
 
-export async function completeMagicLinkSignInRider() {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  if (!session) return null;
-
-  const uid = session.user.id;
-  const email = session.user.email;
-
-  const { data: existing } = await supabase
-    .from("rider_profiles")
-    .select("*")
-    .eq("id", uid)
-    .single();
-
-  if (existing) {
-    return { uid, email, ...existing };
-  }
-
-  const { data: created, error: createError } = await supabase
-    .from("rider_profiles")
-    .insert({ id: uid, email })
-    .select()
-    .single();
-  if (createError) throw createError;
-
-  return { uid, email, ...created };
-}
