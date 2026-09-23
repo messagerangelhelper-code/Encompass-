@@ -68,35 +68,36 @@ export default function RiderPage() {
   };
 
   if (!rider) {
-    return (
-      <main className="min-h-screen flex items-center justify-center p-6" style={{ background: "#111318" }}>
-        <div className="w-full max-w-sm space-y-4 text-center">
-          <h1 className="text-2xl font-bold" style={{ color: "#F5F5F0" }}>Encompass</h1>
-          <p className="text-sm" style={{ color: "#7A7F8A" }}>Rideshare, on your terms.</p>
+  return (
+    <main className="min-h-screen flex items-center justify-center p-6" style={{ background: "#111318" }}>
+      <div className="w-full max-w-sm space-y-4 text-center">
+        <h1 className="text-2xl font-bold" style={{ color: "#F5F5F0" }}>Encompass</h1>
+        <p className="text-sm" style={{ color: "#7A7F8A" }}>Rideshare, on your terms.</p>
 
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
-            type="email"
-            className="w-full px-4 py-3 rounded-xl text-sm text-center"
-            style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }}
-          />
+        {authError && <p className="text-xs" style={{ color: "#ff6b6b" }}>{authError}</p>}
+        {magicLinkSent && <p className="text-xs" style={{ color: ACCENT }}>Check your email for a login link.</p>}
 
-          {authError && <p className="text-xs" style={{ color: "#ff6b6b" }}>{authError}</p>}
-          {magicLinkSent && <p className="text-xs" style={{ color: ACCENT }}>Check your email for a login link.</p>}
-
-          <button
-            onClick={sendMagicLink}
-            className="w-full py-4 rounded-xl text-sm font-semibold"
-            style={{ background: ACCENT, color: "#111318" }}
-          >
-            Encompass Rideshare
-          </button>
-        </div>
-      </main>
-    );
-  }
+        <button
+          onClick={async () => {
+            const enteredEmail = window.prompt("Enter your email to sign in:");
+            if (!enteredEmail) return;
+            setAuthError("");
+            try {
+              await sendMagicLinkRider(enteredEmail);
+              setMagicLinkSent(true);
+            } catch (err) {
+              setAuthError(err.message || "Couldn't send magic link.");
+            }
+          }}
+          className="w-full py-4 rounded-xl text-sm font-semibold"
+          style={{ background: ACCENT, color: "#111318" }}
+        >
+          Encompass Rideshare
+        </button>
+      </div>
+    </main>
+  );
+}
 
   if (!ride) {
     return (
