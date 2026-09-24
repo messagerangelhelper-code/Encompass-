@@ -1,4 +1,3 @@
-import { wazeNavigateUrl } from "../../waze";
 // Waze Deep Link — opens Waze (app on mobile, web map on desktop) with a destination
 // pre-loaded and turn-by-turn navigation started. No partner approval needed for this;
 // it's a one-way handoff (no ETA/route data comes back into this app). Applying for the
