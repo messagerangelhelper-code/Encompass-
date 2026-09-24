@@ -1,5 +1,5 @@
 "use client";
-import { wazeNavigateUrl } from "../../lib/waze"; // adjust path to wherever it actually lives
+import { wazeNavigateUrl } from "../../waze";
 import { useState, useEffect, useRef } from "react";
 import CityMap from "../CityMap";
 import ChatPanel from "../ChatPanel";
