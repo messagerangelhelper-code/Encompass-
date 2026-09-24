@@ -1,4 +1,5 @@
 "use client";
+import { wazeNavigateUrl } from "../../lib/waze"; // adjust path to wherever it actually lives
 import { useState, useEffect, useRef } from "react";
 import CityMap from "../CityMap";
 import ChatPanel from "../ChatPanel";
@@ -171,35 +172,29 @@ const pickupPos = activeRide.pickup_location;
         <p className="text-xs" style={{ color: "#7A7F8A" }}>Fare: ${Number(activeRide.fare).toFixed(2)}</p>
 
         <div className="flex gap-2 mt-3">
-          <button onClick={() => setShowChat(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: "#111318", color: ACCENT, border: `1px solid ${ACCENT}` }}>
-            Chat
-          </button>
-          {activeRide.status === "accepted" && (
-            <button onClick={startTrip} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
-              Start Trip
-            </button>
-          )}
-          {activeRide.status === "in_progress" && (
-            <button onClick={completeTrip} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
-              Complete Trip
-            </button>
-          )}
-        </div>
-
-        {activeRide.status === "completed" && (
-          <div className="mt-3">
-            <p className="text-xs mb-2" style={{ color: "#7A7F8A" }}>Rate rider:</p>
-            <div className="flex gap-2 mb-2">
-              {[1, 2, 3, 4, 5].map((n) => (
-                <button key={n} onClick={() => rateRider(activeRide.id, activeRide.rider_uid, n)} className="text-lg">⭐</button>
-              ))}
-            </div>
-            <button onClick={finishAndReset} className="w-full py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
-              Done — back online
-            </button>
-          </div>
-        )}
-      </div>
+  <button onClick={() => setShowChat(true)} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: "#111318", color: ACCENT, border: `1px solid ${ACCENT}` }}>
+    Chat
+  </button>
+  <a
+    href={wazeNavigateUrl(activeRide.status === "accepted" ? "pickup location" : activeRide.destination)}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex-1 py-2 rounded-xl text-xs font-semibold text-center"
+    style={{ background: "#111318", color: ACCENT, border: `1px solid ${ACCENT}` }}
+  >
+    Navigate
+  </a>
+  {activeRide.status === "accepted" && (
+    <button onClick={startTrip} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+      Start Trip
+    </button>
+  )}
+  {activeRide.status === "in_progress" && (
+    <button onClick={completeTrip} className="flex-1 py-2 rounded-xl text-xs font-semibold" style={{ background: ACCENT, color: "#111318" }}>
+      Complete Trip
+    </button>
+  )}
+</div>
 
       {showChat && (
         <ChatPanel rideId={activeRide.id} mySender="driver" otherName={activeRide.rider_name}
