@@ -9,8 +9,8 @@ import RecordingsScreen from "../../components/RecordingsScreen";
 import { startRecording, stopRecording } from "../../lib/recording";
 import { saveRecording } from "../../lib/recordingsStore";
 import { ACCENT, AMBER } from "../../lib/tokens";
-import { wazeNavigateUrl } from "../../lib/waze";
-import { VEHICLE_TYPES } from "../../lib/vehicleTypes";
+import { wazeNavigateUrl } from "../../waze";
+import { VEHICLE_TYPES } from "../../vehicleTypes";
 import {
 signUpDriver, loginDriver, signOut, updateDriverProfile,
 updateRide, subscribeToRide, subscribeToNextPendingRide, subscribeToDriverRides, resetPassword,
