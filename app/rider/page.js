@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
-import CityMap from "../CityMap";
-import ChatPanel from "../ChatPanel";
+import CityMap from "../../components/CityMap";
+import ChatPanel from "../../components/ChatPanel";
 import { ACCENT } from "../../lib/tokens";
 import {
   sendMagicLinkRider, completeMagicLinkSignInRider,
