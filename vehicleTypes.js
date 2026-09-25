@@ -1,5 +1,4 @@
 import { Car, Users, Truck, Package } from "lucide-react";
-import { VEHICLE_TYPES } from "../../vehicleTypes";
 export const VEHICLE_TYPES = [
   { id: "standard", name: "Standard", icon: Car, note: "Everyday rides", multiplier: 1 },
   { id: "xl", name: "XL", icon: Users, note: "Up to 6 seats", multiplier: 1.5 },
