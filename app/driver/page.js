@@ -1,27 +1,6 @@
-"use client";
-import { useState, useEffect, useRef } from "react";
-import {
-  Navigation, User, Car, Clock, Check, X, Star, Power, DollarSign, MapPin, Shield, Mic, Video, ChevronLeft, MessageCircle, BarChart3, Lock, Unlock,
-} from "lucide-react";
-import CityMap from "../../components/CityMap";
-import ChatPanel from "../../components/ChatPanel";
-import RecordingsScreen from "../../components/RecordingsScreen";
-import { startRecording, stopRecording } from "../../lib/recording";
-import { saveRecording } from "../../lib/recordingsStore";
-import { ACCENT, AMBER } from "../../lib/tokens";
-import { wazeNavigateUrl } from "../../waze";
-import { VEHICLE_TYPES } from "../../vehicleTypes";
-import {
-signUpDriver, loginDriver, signOut, updateDriverProfile,
-updateRide, subscribeToRide, subscribeToNextPendingRide, subscribeToDriverRides, resetPassword,
-sendMagicLinkDriver, completeMagicLinkSignInDriver, completeDriverMagicLinkSignup,
-updateDriverLocation, setDriverOnlineStatus, getSiteSettings,
-} from "../../lib/supabase-db";
-export const dynamic = "force-dynamic";
-const QUICK_REPLIES_DRIVER = ["I'm here", "2 min away", "Running a bit late", "On my way"];
-
 // ---------- Auth ----------
 function DriverAuthScreen({ onAuthed }) {
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [carModel, setCarModel] = useState("");
@@ -73,10 +52,11 @@ function DriverAuthScreen({ onAuthed }) {
     setError("");
     if (!name.trim()) { setError("Enter your name to continue."); return; }
     if (!carModel || !plate) { setError("Fill in your car model and plate to continue."); return; }
+    if (!phone.trim()) { setError("Enter a phone number so riders can reach you if needed."); return; }
     if (!agreed) { setError("You must agree to the terms to continue."); return; }
     setBusy(true);
     try {
-      const driver = await completeDriverMagicLinkSignup(pending.uid, { name, email: pending.email, carModel, plate, vehicleType });
+      const driver = await completeDriverMagicLinkSignup(pending.uid, { name, email: pending.email, carModel, plate, vehicleType, phone: phone.trim() });
       onAuthed(driver);
     } catch (err) {
       setError(err.message?.replace("Firebase: ", "") || "Something went wrong.");
@@ -97,6 +77,10 @@ function DriverAuthScreen({ onAuthed }) {
         <form onSubmit={submitVehicleInfo} className="space-y-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name"
             name="name" autoComplete="name"
+            className="w-full px-4 py-3.5 rounded-xl text-base outline-none"
+            style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone number" type="tel"
+            name="phone" autoComplete="tel"
             className="w-full px-4 py-3.5 rounded-xl text-base outline-none"
             style={{ background: "#1D2028", color: "#F5F5F0", border: "1px solid #2B2F3A" }} />
           <div className="flex gap-3">
@@ -141,8 +125,8 @@ function DriverAuthScreen({ onAuthed }) {
       </div>
     );
   }
-
-  return (
+      
+return (
     <div className="min-h-full w-full flex flex-col justify-center px-8" style={{ background: "#111318" }}>
       <div className="mb-8">
         <div className="w-11 h-11 rounded-2xl mb-6 flex items-center justify-center" style={{ background: ACCENT }}>
