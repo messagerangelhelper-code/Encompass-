@@ -23,11 +23,6 @@ const QUICK_REPLIES_DRIVER = ["I'm here", "2 min away", "Running a bit late", "O
 // ---------- Auth ----------
 function DriverAuthScreen({ onAuthed }) {
   const [phone, setPhone] = useState("");
-
-
-// ---------- Auth ----------
-function DriverAuthScreen({ onAuthed }) {
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [carModel, setCarModel] = useState("");
