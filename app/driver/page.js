@@ -1,3 +1,30 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import {
+  Navigation, User, Car, Clock, Check, X, Star, Power, DollarSign, MapPin, Shield, Mic, Video, ChevronLeft, MessageCircle, BarChart3, Lock, Unlock,
+} from "lucide-react";
+import CityMap from "../../components/CityMap";
+import ChatPanel from "../../components/ChatPanel";
+import RecordingsScreen from "../../components/RecordingsScreen";
+import { startRecording, stopRecording } from "../../lib/recording";
+import { saveRecording } from "../../lib/recordingsStore";
+import { ACCENT, AMBER } from "../../lib/tokens";
+import { wazeNavigateUrl } from "../../waze";
+import { VEHICLE_TYPES } from "../../vehicleTypes";
+import {
+signUpDriver, loginDriver, signOut, updateDriverProfile,
+updateRide, subscribeToRide, subscribeToNextPendingRide, subscribeToDriverRides, resetPassword,
+sendMagicLinkDriver, completeMagicLinkSignInDriver, completeDriverMagicLinkSignup,
+updateDriverLocation, setDriverOnlineStatus, getSiteSettings,
+} from "../../lib/supabase-db";
+export const dynamic = "force-dynamic";
+const QUICK_REPLIES_DRIVER = ["I'm here", "2 min away", "Running a bit late", "On my way"];
+
+// ---------- Auth ----------
+function DriverAuthScreen({ onAuthed }) {
+  const [phone, setPhone] = useState("");
+
+
 // ---------- Auth ----------
 function DriverAuthScreen({ onAuthed }) {
   const [phone, setPhone] = useState("");
