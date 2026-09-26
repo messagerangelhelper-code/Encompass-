@@ -1020,11 +1020,16 @@ export default function DriverApp() {
   const exitConfirmRef = useRef(false);
 
   useEffect(() => {
-    getSiteSettings().then((s) => {
+  getSiteSettings()
+    .then((s) => {
       setSiteEnabled(s.site_enabled);
       setCheckingSite(false);
+    })
+    .catch(() => {
+      setSiteEnabled(true);
+      setCheckingSite(false);
     });
-  }, []);
+}, []);
 
   // Keeps the screen from sleeping while online or on an active trip — lives
   // at the root so it survives navigating between Home, Trip, and other
