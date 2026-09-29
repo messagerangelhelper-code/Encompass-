@@ -82,14 +82,37 @@ export default function TermsOfService() {
         does not store your full payment card details.
       </p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-3">8. Prohibited Conduct</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">8. Intellectual Property</h2>
+      <p className="mb-4">
+        The Platform — including its source code, design, user interface, branding, logos,
+        and content — is the property of Encompass and its licensors and is protected by
+        copyright, trademark, and other intellectual property laws. Except for the limited
+        right to use the Platform as intended for booking and providing rides, no license or
+        right is granted to you to copy, reproduce, modify, distribute, publicly display,
+        reverse engineer, decompile, or create derivative works based on the Platform or any
+        part of it.
+      </p>
+      <p className="mb-4">
+        &copy; 2026 Encompass Rideshare. All rights reserved.
+      </p>
+
+      <h2 className="text-xl font-semibold mt-8 mb-3">9. Prohibited Conduct</h2>
       <p className="mb-4">
         You agree not to use the Platform for any unlawful purpose, to harass or endanger
         another user, to provide false information, or to attempt to circumvent Encompass's
         payment systems (e.g., arranging off-platform payment to avoid fees).
       </p>
+      <p className="mb-4">
+        You also agree not to: scrape, crawl, or use automated tools to extract data,
+        content, pricing, or account information from the Platform; probe, scan, or test the
+        vulnerability of the Platform or attempt to bypass any of its security or rate-limiting
+        measures; copy or clone the Platform's design, code, or functionality to build a
+        competing product or service; or use the Platform's APIs or booking flow other than
+        through the interfaces we provide for their intended purpose. Violation of this section
+        may result in immediate account termination and legal action.
+      </p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-3">9. Disclaimers &amp; Limitation of Liability</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">10. Disclaimers &amp; Limitation of Liability</h2>
       <p className="mb-4">
         THE PLATFORM IS PROVIDED "AS IS" WITHOUT WARRANTIES OF ANY KIND. ENCOMPASS DOES NOT
         GUARANTEE THE AVAILABILITY, SAFETY, OR CONDUCT OF ANY RIDER OR DRIVER. TO THE MAXIMUM
@@ -98,20 +121,20 @@ export default function TermsOfService() {
         MONTHS PRECEDING THE CLAIM.
       </p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-3">10. Termination</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">11. Termination</h2>
       <p className="mb-4">
         Encompass may suspend or terminate your account at any time for violation of these
         Terms, safety concerns, or fraudulent activity. You may stop using the Platform and
         request account deletion at any time by contacting us.
       </p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-3">11. Changes to These Terms</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">12. Changes to These Terms</h2>
       <p className="mb-4">
         We may update these Terms from time to time. Continued use of the Platform after
         changes take effect constitutes acceptance of the revised Terms.
       </p>
 
-      <h2 className="text-xl font-semibold mt-8 mb-3">12. Contact</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">13. Contact</h2>
       <p className="mb-4">
         Questions about these Terms can be directed to{" "}
         <a href="mailto:support@encompassrs.com" className="text-blue-400 underline">
@@ -120,4 +143,4 @@ export default function TermsOfService() {
       </p>
     </div>
   );
-          }
+}
