@@ -1,22 +1,40 @@
 import { createClient } from "@supabase/supabase-js";
+import { rateLimit } from "../../../lib/rateLimit";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
+// This endpoint creates a Square payment link and a pending_bookings row on
+// every call, with no auth in front of it — without a limit, a scraper or
+// bot could hammer it to spam our Square account with links and bloat the
+// database. 8 requests/minute per IP is generous for a real rider booking a
+// ride, but blocks abuse.
+const RATE_LIMIT = { limit: 8, windowMs: 60_000, keyPrefix: "create-payment-link" };
+
+// Sanity bound so a malformed or malicious fare can't create a wildly
+// oversized Square charge.
+const MAX_FARE_USD = 2000;
 
 export async function POST(request) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
-
   try {
+    const limited = rateLimit(request, RATE_LIMIT);
+    if (limited) return limited;
+
     const body = await request.json();
     const { fare } = body;
 
-    if (!fare || fare <= 0) {
+    if (!fare || fare <= 0 || fare > MAX_FARE_USD) {
       return Response.json({ error: "Invalid fare amount" }, { status: 400 });
     }
 
     const amountInCents = Math.round(fare * 100);
     const token = crypto.randomUUID();
 
+    // Store the full ride details now, under this token — nothing is written
+    // to the real `rides` table yet. Only the webhook (once Square confirms
+    // the payment actually went through) will create the real ride.
     const rideData = {
       riderName: body.riderName || "Rider",
       riderUid: body.riderUid || crypto.randomUUID(),
@@ -42,6 +60,9 @@ export async function POST(request) {
       return Response.json({ error: "Couldn't set up booking" }, { status: 500 });
     }
 
+    // Create the payment link with the order built inline (location, our
+    // reference token, and the line item) all in one call — this avoids the
+    // separate order-creation step and the field mismatches that came with it.
     const linkRes = await fetch("https://connect.squareup.com/v2/online-checkout/payment-links", {
       method: "POST",
       headers: {
