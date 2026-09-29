@@ -59,7 +59,7 @@ async function getDrivingRoute(pickup, dropoff) {
 }
 
 // ---------- Booking form ----------
-function HotelBookingForm({ onBooked }) {
+function HotelBookingForm({ onBooked, onTryDemo }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [hotelIndex, setHotelIndex] = useState("");
@@ -141,7 +141,7 @@ function HotelBookingForm({ onBooked }) {
     // sends the guest back with these details in the URL. This prevents a
     // driver from ever seeing/accepting a ride that hasn't been paid for.
     try {
-      const res = await fetch("/api/create-payment-link", {
+      const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -173,8 +173,12 @@ function HotelBookingForm({ onBooked }) {
     <div className="min-h-screen w-full flex flex-col px-6 py-8" style={{ background: "#111318" }}>
       <div className="max-w-md w-full mx-auto">
         <h1 className="text-2xl font-semibold tracking-tight mb-1" style={{ color: "#F5F5F0" }}>Encompass Rideshare</h1>
-        <p className="text-sm mb-6" style={{ color: "#7A7F8A" }}>Book a ride from your hotel — to the airport or anywhere around town.</p>
-      <p className="text-sm mb-6" style={{ color: "#7A7F8A" }}>Book a ride from your hotel — to the airport or anywhere around town.</p>
+        <p className="text-sm mb-3" style={{ color: "#7A7F8A" }}>Book a ride from your hotel — to the airport or anywhere around town.</p>
+      <button onClick={onTryDemo}
+        className="w-full mb-4 py-2.5 rounded-xl text-sm font-medium"
+        style={{ background: "transparent", color: AMBER, border: `1px solid ${AMBER}` }}>
+        ▶ Try a live demo (no booking, no charge)
+      </button>
       <div className="mb-6"><HowToBookModal phone="4693097655" /></div>
         <div className="space-y-3">
           <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name"
@@ -286,6 +290,85 @@ function HotelBookingForm({ onBooked }) {
   );
 }
 
+// ---------- Demo mode ----------
+// A fully sandboxed walkthrough of the booking + tracking experience.
+// It never calls /api/checkout, never touches Square, and never writes to
+// Supabase — everything here is canned data and local timers, so visitors
+// can safely click through the whole flow without it costing anything or
+// creating a fake row in real tables.
+const DEMO_PICKUP = { lat: 32.3293, lng: -96.6297, name: "Quality Inn (Ennis, TX)" };
+const DEMO_DROPOFF = { lat: 32.8481, lng: -96.8512, name: "Dallas Love Field Airport" };
+const DEMO_DRIVER_START = { lat: 32.36, lng: -96.66 };
+const DEMO_STEPS = [
+  { status: "requested", delay: 0 },
+  { status: "accepted", delay: 2500 },
+  { status: "arrived_pickup", delay: 6000 },
+  { status: "in_progress", delay: 9500 },
+  { status: "completed", delay: 15000 },
+];
+const DEMO_STATUS_TEXT = {
+  requested: "Finding you a driver…",
+  accepted: "Your driver is on the way",
+  arrived_pickup: "Your driver has arrived — head down!",
+  in_progress: `Heading to ${DEMO_DROPOFF.name}`,
+  completed: "Ride complete — thank you!",
+};
+
+function DemoTrackingScreen({ onExit }) {
+  const [status, setStatus] = useState("requested");
+
+  useEffect(() => {
+    const timers = DEMO_STEPS.map((step) =>
+      setTimeout(() => setStatus(step.status), step.delay)
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Driver marker eases from its start position toward pickup, then toward
+  // dropoff, purely for visual interest — no real GPS involved.
+  const driverPos =
+    status === "requested" ? DEMO_DRIVER_START :
+    status === "accepted" ? { lat: (DEMO_DRIVER_START.lat + DEMO_PICKUP.lat) / 2, lng: (DEMO_DRIVER_START.lng + DEMO_PICKUP.lng) / 2 } :
+    status === "arrived_pickup" ? DEMO_PICKUP :
+    status === "in_progress" ? { lat: (DEMO_PICKUP.lat + DEMO_DROPOFF.lat) / 2, lng: (DEMO_PICKUP.lng + DEMO_DROPOFF.lng) / 2 } :
+    DEMO_DROPOFF;
+
+  return (
+    <div className="w-full h-screen relative">
+      <div className="absolute top-0 left-0 right-0 z-10 px-4 py-2 text-center text-xs font-semibold"
+        style={{ background: AMBER, color: "#111318" }}>
+        DEMO MODE — no real booking, no charge, nothing saved
+      </div>
+      <div style={{ position: "absolute", inset: 0, top: 34 }}>
+        <CityMap driverPos={driverPos} pickupPos={DEMO_PICKUP} dropoffPos={DEMO_DROPOFF} showRoute />
+      </div>
+      <div className="absolute left-4 right-4" style={{ top: 46 }}>
+        <div className="px-4 py-2.5 rounded-full flex items-center gap-2" style={{ background: "rgba(17,19,24,0.85)", border: "1px solid #2B2F3A" }}>
+          <div className="w-2 h-2 rounded-full" style={{ background: AMBER }} />
+          <span className="text-sm" style={{ color: "#F5F5F0" }}>{DEMO_STATUS_TEXT[status]}</span>
+        </div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 rounded-t-3xl p-5 pb-8" style={{ background: "#F5F5F0" }}>
+        <div className="w-9 h-1 rounded-full mx-auto mb-5" style={{ background: "#D8D6CE" }} />
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: ACCENT }}>
+            <Car size={20} color="#111318" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-sm" style={{ color: "#111318" }}>Jordan (demo driver)</p>
+            <p className="text-xs" style={{ color: "#7A7F8A" }}>Toyota Camry · Demo-1234</p>
+          </div>
+        </div>
+        <button onClick={onExit}
+          className="w-full py-3 rounded-xl font-medium text-sm"
+          style={{ background: "#1D2028", color: "#F5F5F0" }}>
+          Exit demo
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ---------- Tracking (after booking / after payment) ----------
 function HotelTrackingScreen({ rideId }) {
   const [ride, setRide] = useState(null);
@@ -341,6 +424,7 @@ export default function HotelPortal() {
   const [rideId, setRideId] = useState(null);
   const [checkedUrl, setCheckedUrl] = useState(false);
   const [error, setError] = useState("");
+  const [demoMode, setDemoMode] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -389,9 +473,13 @@ export default function HotelPortal() {
     );
   }
 
+  if (demoMode) {
+    return <DemoTrackingScreen onExit={() => setDemoMode(false)} />;
+  }
+
   if (rideId) {
     return <HotelTrackingScreen rideId={rideId} />;
   }
 
-  return <HotelBookingForm onBooked={setRideId} />;
+  return <HotelBookingForm onBooked={setRideId} onTryDemo={() => setDemoMode(true)} />;
 }
