@@ -1,120 +1,102 @@
 import { createClient } from "@supabase/supabase-js";
-import crypto from "crypto";
+import { rateLimit } from "../../../lib/rateLimit";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-function verifySignature(rawBody, signatureHeader, notificationUrl) {
-  const hmac = crypto.createHmac("sha256", process.env.SQUARE_WEBHOOK_SIGNATURE_KEY);
-  hmac.update(notificationUrl + rawBody);
-  const expected = hmac.digest("base64");
-  return expected === signatureHeader;
-}
+// This endpoint creates a Square payment link and a pending_bookings row on
+// every call, with no auth in front of it — without a limit, a scraper or
+// bot could hammer it to spam our Square account with links and bloat the
+// database. 8 requests/minute per IP is generous for a real rider booking a
+// ride, but blocks abuse.
+const RATE_LIMIT = { limit: 8, windowMs: 60_000, keyPrefix: "create-payment-link" };
 
-function toSnakeCasePatch(ride) {
-  return {
-    rider_uid: ride.riderUid,
-    rider_name: ride.riderName,
-    destination: ride.destination,
-    vehicle_type: ride.vehicleType || "standard",
-    fare: ride.fare,
-    miles: ride.miles,
-    minutes: ride.minutes,
-    is_family_ride: ride.isFamilyRide || false,
-    rider_recording: ride.riderRecording || false,
-    payment_method: ride.paymentMethod || "card",
-    pickup_location: ride.pickupLocation || null,
-    dropoff_location: ride.dropoffLocation || null,
-    status: "requested",
-    created_at: new Date().toISOString(),
-  };
-}
+// Sanity bound so a malformed or malicious fare can't create a wildly
+// oversized Square charge.
+const MAX_FARE_USD = 2000;
 
 export async function POST(request) {
-  const rawBody = await request.text();
-  const signatureHeader = request.headers.get("x-square-hmacsha256-signature");
-  const notificationUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/square-webhook`;
-
-  if (!signatureHeader || !verifySignature(rawBody, signatureHeader, notificationUrl)) {
-    console.error("Square webhook: signature mismatch — rejecting.");
-    return Response.json({ error: "Invalid signature" }, { status: 401 });
-  }
-
-  let event;
   try {
-    event = JSON.parse(rawBody);
-  } catch (err) {
-    return Response.json({ error: "Invalid payload" }, { status: 400 });
-  }
+    const limited = rateLimit(request, RATE_LIMIT);
+    if (limited) return limited;
 
-  if (event.type !== "payment.updated") {
-    return Response.json({ received: true });
-  }
+    const body = await request.json();
+    const { fare } = body;
 
-  const payment = event.data?.object?.payment;
-  if (!payment || payment.status !== "COMPLETED") {
-    return Response.json({ received: true });
-  }
+    if (!fare || fare <= 0 || fare > MAX_FARE_USD) {
+      return Response.json({ error: "Invalid fare amount" }, { status: 400 });
+    }
 
-  try {
-    // Look up the order to get our reference_id (the booking token)
-    const orderRes = await fetch(`https://connect.squareup.com/v2/orders/${payment.order_id}`, {
+    const amountInCents = Math.round(fare * 100);
+    const token = crypto.randomUUID();
+
+    // Store the full ride details now, under this token — nothing is written
+    // to the real `rides` table yet. Only the webhook (once Square confirms
+    // the payment actually went through) will create the real ride.
+    const rideData = {
+      riderName: body.riderName || "Rider",
+      riderUid: body.riderUid || crypto.randomUUID(),
+      destination: body.destination || "",
+      fare: body.fare,
+      miles: body.miles || 0,
+      minutes: body.minutes || 0,
+      vehicleType: body.vehicleType || "standard",
+      isFamilyRide: !!body.isFamilyRide,
+      riderRecording: !!body.riderRecording,
+      paymentMethod: "card",
+      pickupLocation: body.pickupLat != null ? { lat: body.pickupLat, lng: body.pickupLng } : null,
+      dropoffLocation: body.dropoffLat != null ? { lat: body.dropoffLat, lng: body.dropoffLng } : null,
+      guestPhone: body.guestPhone || null,
+      pickupHotel: body.pickupHotel || null,
+    };
+
+    const { error: insertError } = await supabase.from("pending_bookings").insert({
+      token, ride_data: rideData, fare: body.fare,
+    });
+    if (insertError) {
+      console.error("Pending booking insert error:", insertError);
+      return Response.json({ error: "Couldn't set up booking" }, { status: 500 });
+    }
+
+    // Create the payment link with the order built inline (location, our
+    // reference token, and the line item) all in one call — this avoids the
+    // separate order-creation step and the field mismatches that came with it.
+    const linkRes = await fetch("https://connect.squareup.com/v2/online-checkout/payment-links", {
+      method: "POST",
       headers: {
         "Square-Version": "2024-06-20",
         "Authorization": `Bearer ${process.env.SQUARE_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        idempotency_key: `link-${token}`,
+        order: {
+          location_id: process.env.SQUARE_LOCATION_ID,
+          reference_id: token,
+          line_items: [
+            {
+              name: `Encompass Rideshare — ${body.destination || "Ride"}`,
+              quantity: "1",
+              base_price_money: { amount: amountInCents, currency: "USD" },
+            },
+          ],
+        },
+        checkout_options: {
+          redirect_url: `${process.env.NEXT_PUBLIC_SITE_URL}${body.returnTo || "/rider"}?payment=pending&token=${token}`,
+        },
+      }),
     });
-    const orderData = await orderRes.json();
-    const token = orderData.order?.reference_id;
-    if (!token) {
-      console.error("Square webhook: no reference_id on order", payment.order_id);
-      return Response.json({ received: true });
+    const linkData = await linkRes.json();
+    if (!linkRes.ok) {
+      console.error("Square payment link error:", linkData);
+      return Response.json({ error: linkData.errors?.[0]?.detail || "Couldn't create payment link" }, { status: 500 });
     }
 
-    const { data: booking, error: fetchError } = await supabase
-      .from("pending_bookings")
-      .select("*")
-      .eq("token", token)
-      .single();
-
-    if (fetchError || !booking) {
-      console.error("Square webhook: no pending booking found for token", token);
-      return Response.json({ received: true });
-    }
-
-    if (booking.ride_id) {
-      // Already processed (Square can send duplicate webhook deliveries) —
-      // safe to just acknowledge and stop.
-      return Response.json({ received: true });
-    }
-
-    // Sanity check: the amount actually paid should match what we quoted.
-    const paidCents = payment.amount_money?.amount || 0;
-    const expectedCents = Math.round(Number(booking.fare) * 100);
-    if (paidCents !== expectedCents) {
-      console.error("Square webhook: amount mismatch", { paidCents, expectedCents, token });
-      return Response.json({ received: true });
-    }
-
-    // Payment confirmed — NOW the ride actually gets created.
-    const { data: newRide, error: insertError } = await supabase
-      .from("rides")
-      .insert(toSnakeCasePatch(booking.ride_data))
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("Square webhook: failed to create ride", insertError);
-      return Response.json({ received: true });
-    }
-
-    await supabase.from("pending_bookings").update({ ride_id: newRide.id }).eq("token", token);
-
-    return Response.json({ received: true, rideId: newRide.id });
+    return Response.json({ url: linkData.payment_link.url });
   } catch (err) {
-    console.error("Square webhook error:", err);
-    return Response.json({ received: true });
+    console.error("Payment link error:", err);
+    return Response.json({ error: err.message || "Unknown error" }, { status: 500 });
   }
 }
