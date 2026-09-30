@@ -1,12 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { MapPin, Search, Car, Check, Clock, Phone, Send } from "lucide-react";
-import CityMap from "../../components/CityMap";
-import { ACCENT, AMBER } from "../../lib/tokens";
-import { fareForTrip } from "../../lib/fare";
-import { VEHICLE_TYPES } from "../../lib/vehicleTypes";
-import { subscribeToRide, getPendingBooking } from "../../lib/supabase-db";
-import HowToBookModal from "../../components/HowToBookModal";
+import CityMap from "../components/CityMap";
+import { ACCENT, AMBER } from "../lib/tokens";
+import { fareForTrip } from "../lib/fare";
+import { VEHICLE_TYPES } from "../vehicleTypes";
+import { subscribeToRide, getPendingBooking } from "../lib/supabase-db";
+import HowToBookModal from "./HowToBookModal";
 // Hotels in Ennis, TX and Waxahachie, TX — selecting one auto-fills pickup
 // address so guests don't need to know or type their own location.
 const HOTELS = [
