@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Generate Download Link — Admin</title>
+<style>
+  :root {
+    --navy: #0B1F3A;
+    --gold: #C6A15B;
+    --cream: #FDF8EF;
+    --text: #2B2320;
+    --subtext: #6B7280;
+    --border: #E4E2D9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--navy);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 16px;
+  }
+  .card {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 28px 24px 32px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  h1 {
+    font-size: 20px;
+    color: var(--navy);
+    margin: 0 0 4px;
+  }
+  .sub {
+    color: var(--subtext);
+    font-size: 13px;
+    margin: 0 0 24px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--navy);
+    margin: 16px 0 6px;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 15px;
+    background: #fff;
+    color: var(--text);
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button:active:not(:disabled) { transform: scale(0.98); }
+  .result {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    word-break: break-all;
+    display: none;
+  }
+  .result.success {
+    background: #EAF6EC;
+    border: 1px solid #B9E4C0;
+    color: #1F5C2B;
+    display: block;
+  }
+  .result.error {
+    background: #FCEAEA;
+    border: 1px solid #F0B8B8;
+    color: #8A2A2A;
+    display: block;
+  }
+  .link-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .link-row input {
+    flex: 1;
+    font-size: 12px;
+    background: #fff;
+  }
+  .copy-btn {
+    width: auto;
+    margin-top: 0;
+    padding: 10px 14px;
+    font-size: 13px;
+  }
+  .secret-note {
+    font-size: 11px;
+    color: var(--subtext);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Generate Download Link</h1>
+    <p class="sub">For Cash App / manual sales — creates a one-time download link and does NOT send it anywhere. Copy it and send it yourself.</p>
+
+    <label for="secret">Admin secret</label>
+    <input id="secret" type="password" placeholder="Your admin secret" autocomplete="off" />
+    <p class="secret-note">Not saved anywhere — you'll re-enter it each visit.</p>
+
+    <label for="product">Ebook</label>
+    <select id="product">
+      <option value="ebook-contract">Music Contract Guide (Complete)</option>
+      <option value="ebook-kingdoms">Kingdoms for a Song</option>
+      <option value="ebook-wilderness">The Wilderness Deal</option>
+      <option value="ebook-bowing">Bowing for the Beat</option>
+      <option value="ebook-glory">Causing the Glory to Fall</option>
+      <option value="ebook-undivided">Undivided</option>
+      <option value="ebook-asyourself">As Yourself</option>
+      <option value="ebook-bondofpeace">Bond of Peace</option>
+      <option value="ebook-overcomers">The Overcomers</option>
+    </select>
+
+    <label for="email">Buyer email</label>
+    <input id="email" type="email" placeholder="buyer@example.com" autocomplete="off" />
+
+    <label for="note">Note (optional)</label>
+    <textarea id="note" placeholder="e.g. Cash App payment, $9.99, confirmed 7/31"></textarea>
+
+    <button id="submitBtn" onclick="generateLink()">Generate Link</button>
+
+    <div id="result" class="result"></div>
+  </div>
+
+<script>
+async function generateLink() {
+  const secret = document.getElementById('secret').value.trim();
+  const productId = document.getElementById('product').value;
+  const email = document.getElementById('email').value.trim();
+  const note = document.getElementById('note').value.trim();
+  const btn = document.getElementById('submitBtn');
+  const resultEl = document.getElementById('result');
+
+  resultEl.className = 'result';
+  resultEl.innerHTML = '';
+
+  if (!secret) {
+    resultEl.className = 'result error';
+    resultEl.textContent = 'Enter your admin secret first.';
+    return;
+  }
+  if (!email) {
+    resultEl.className = 'result error';
+    resultEl.textContent = "Enter the buyer's email.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Generating…';
+
+  try {
+    const res = await fetch('/api/admin-generate-download', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-secret': secret,
+      },
+      body: JSON.stringify({ productId, email, note: note || undefined }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      resultEl.className = 'result error';
+      resultEl.textContent = data.error || 'Something went wrong. Check your secret and try again.';
+    } else {
+      resultEl.className = 'result success';
+      resultEl.innerHTML =
+        '<strong>Link ready — copy and send it to the buyer:</strong>' +
+        '<div class="link-row">' +
+          '<input id="linkOut" type="text" readonly value="' + data.link + '" />' +
+          '<button class="copy-btn" onclick="copyLink()">Copy</button>' +
+        '</div>';
+    }
+  } catch (err) {
+    resultEl.className = 'result error';
+    resultEl.textContent = 'Network error — please try again.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Generate Link';
+}
+
+function copyLink() {
+  const input = document.getElementById('linkOut');
+  input.select();
+  input.setSelectionRange(0, 99999);
+  navigator.clipboard.writeText(input.value);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Free Guide Signups — Admin</title>
+<style>
+  :root {
+    --navy: #0B1F3A;
+    --gold: #C6A15B;
+    --cream: #FDF8EF;
+    --text: #2B2320;
+    --subtext: #6B7280;
+    --border: #E4E2D9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--navy);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .card {
+    background: var(--cream);
+    border-radius: 20px;
+    padding: 24px 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  h1 {
+    font-size: 20px;
+    color: var(--navy);
+    margin: 0 0 4px;
+  }
+  .sub {
+    color: var(--subtext);
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+  .controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  input {
+    flex: 1;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 15px;
+    background: #fff;
+    color: var(--text);
+  }
+  button {
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: none;
+    background: var(--gold);
+    color: var(--navy);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .error {
+    color: #8A2A2A;
+    font-size: 13px;
+    margin: 0 0 14px;
+    display: none;
+  }
+  .summary {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .summary.shown { display: flex; }
+  .count {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .copy-all {
+    padding: 8px 14px;
+    font-size: 12px;
+    background: var(--navy);
+    color: #F5F5F0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    display: none;
+  }
+  table.shown { display: table; }
+  th, td {
+    text-align: left;
+    padding: 10px 8px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--subtext);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  td { color: var(--text); word-break: break-word; }
+  .empty {
+    display: none;
+    text-align: center;
+    color: var(--subtext);
+    font-size: 14px;
+    padding: 30px 0;
+  }
+  .empty.shown { display: block; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Free Guide Signups</h1>
+      <p class="sub">Everyone who's signed up for the free preview guide.</p>
+
+      <div class="controls">
+        <input id="secret" type="password" placeholder="Admin secret" autocomplete="off" />
+        <button id="loadBtn" onclick="loadSignups()">Load List</button>
+      </div>
+
+      <p class="error" id="errorMsg"></p>
+
+      <div class="summary" id="summary">
+        <span class="count" id="countText"></span>
+        <button class="copy-all" onclick="copyAllEmails()">Copy All Emails</button>
+      </div>
+
+      <p class="empty" id="emptyMsg">No signups yet.</p>
+
+      <table id="signupsTable">
+        <thead>
+          <tr><th>Email</th><th>Signed Up</th></tr>
+        </thead>
+        <tbody id="signupsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+let allEmails = [];
+
+async function loadSignups() {
+  const secret = document.getElementById('secret').value.trim();
+  const btn = document.getElementById('loadBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const table = document.getElementById('signupsTable');
+  const summary = document.getElementById('summary');
+  const emptyMsg = document.getElementById('emptyMsg');
+  const body = document.getElementById('signupsBody');
+
+  errorMsg.style.display = 'none';
+  table.classList.remove('shown');
+  summary.classList.remove('shown');
+  emptyMsg.classList.remove('shown');
+
+  if (!secret) {
+    errorMsg.textContent = 'Enter your admin secret first.';
+    errorMsg.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+
+  try {
+    const res = await fetch('/api/admin-list-signups', {
+      headers: { 'x-admin-secret': secret },
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorMsg.textContent = data.error || 'Something went wrong.';
+      errorMsg.style.display = 'block';
+    } else if (data.signups.length === 0) {
+      emptyMsg.classList.add('shown');
+      allEmails = [];
+    } else {
+      allEmails = data.signups.map(function (s) { return s.email; });
+      document.getElementById('countText').textContent =
+        data.count + (data.count === 1 ? ' signup' : ' signups');
+      summary.classList.add('shown');
+
+      body.innerHTML = data.signups.map(function (s) {
+        const date = s.createdAt ? new Date(s.createdAt).toLocaleDateString(undefined, {
+          month: 'short', day: 'numeric', year: 'numeric',
+        }) : '\u2014';
+        return '<tr><td>' + s.email + '</td><td>' + date + '</td></tr>';
+      }).join('');
+
+      table.classList.add('shown');
+    }
+  } catch (err) {
+    errorMsg.textContent = 'Network error \u2014 please try again.';
+    errorMsg.style.display = 'block';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Load List';
+}
+
+function copyAllEmails() {
+  navigator.clipboard.writeText(allEmails.join(', '));
+}
+</script>
+</body>
+</html>
