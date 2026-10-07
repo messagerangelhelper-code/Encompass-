@@ -68,7 +68,7 @@ export async function updateDriverProfile(uid, fields) {
     carModel: "car_model", vehicleType: "vehicle_type", earningsToday: "earnings_today",
     audioRecordingEnabled: "audio_recording_enabled", videoRecordingEnabled: "video_recording_enabled",
     backgroundCheckStatus: "background_check_status", pendingApproval: "pending_approval",
-    gasPrice: "gas_price",
+    gasPrice: "gas_price", insuranceExpiresAt: "insurance_expires_at",
   };
   const payload = {};
   for (const [k, v] of Object.entries(fields)) payload[map[k] || k] = v;
@@ -360,7 +360,7 @@ export function subscribeToActiveAnnouncements(onChange) {
     supabase.from("announcements").select("*")
       .eq("active", true).order("created_at", { ascending: false })
       .then(({ data }) => {
-        if (data) onChange(data.map((a) => ({ id: a.id, text: a.message, createdAt: a.created_at ? new Date(a.created_at).getTime() : null })));
+        if (data) onChange(data.map((a) => ({ id: a.id, text: a.message ?? a.text, createdAt: a.created_at ? new Date(a.created_at).getTime() : null })));
       });
   };
   fetch();
@@ -443,5 +443,150 @@ export async function deleteAllRides() {
   const { error: msgError } = await supabase.from('ride_messages').delete().neq('id', '');
   if (msgError) throw msgError;
   const { error } = await supabase.from('rides').delete().neq('id', '');
+  if (error) throw error;
+}
+
+// =====================================================================
+// ---------- Admin dashboard (ported from the original Encompass repo) ----------
+// =====================================================================
+
+// Only these emails can sign in to /admin. They must also exist as
+// users in Supabase Auth (Authentication > Users).
+const ADMIN_EMAILS = [
+  "cashcowaiadmin@gmail.com",
+];
+
+// Adds camelCase copies of snake_case columns so the admin screen can read
+// either style (e.g. rider_name -> riderName), plus createdAt in milliseconds.
+function withCamel(row) {
+  const out = { ...row };
+  for (const [k, v] of Object.entries(row)) {
+    const camel = k.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    if (!(camel in out)) out[camel] = v;
+  }
+  if (row.created_at) out.createdAt = new Date(row.created_at).getTime();
+  return out;
+}
+
+export async function loginAdmin({ email, password }) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  if (!ADMIN_EMAILS.includes(email.trim().toLowerCase())) {
+    await supabase.auth.signOut();
+    throw new Error("This account is not authorized for admin access.");
+  }
+  return { uid: data.user.id, email: data.user.email };
+}
+
+export async function resetPassword(email, redirectPath = "/") {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}${redirectPath}`,
+  });
+  if (error) throw error;
+}
+
+export async function setSiteEnabled(enabled) {
+  const { error } = await supabase
+    .from("site_settings")
+    .update({ site_enabled: enabled, updated_at: new Date().toISOString() })
+    .eq("id", 1);
+  if (error) throw error;
+}
+
+export function subscribeToAllRides(onChange, max = 100) {
+  const fetch = () => {
+    supabase.from("rides").select("*").order("created_at", { ascending: false }).limit(max)
+      .then(({ data }) => { if (data) onChange(data.map(withCamel)); });
+  };
+  fetch();
+  const channel = supabase
+    .channel("admin-all-rides")
+    .on("postgres_changes", { event: "*", schema: "public", table: "rides" }, fetch)
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}
+
+export function subscribeToDrivers(onChange) {
+  const fetch = () => {
+    supabase.from("drivers").select("*")
+      .then(({ data }) => { if (data) onChange(data.map((d) => ({ uid: d.id, ...withCamel(d) }))); });
+  };
+  fetch();
+  const channel = supabase
+    .channel("admin-all-drivers")
+    .on("postgres_changes", { event: "*", schema: "public", table: "drivers" }, fetch)
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}
+
+export function subscribeToRiders(onChange) {
+  const fetch = () => {
+    supabase.from("riders").select("*")
+      .then(({ data }) => { if (data) onChange(data.map((r) => ({ uid: r.id, ...withCamel(r) }))); });
+  };
+  fetch();
+  const channel = supabase
+    .channel("admin-all-riders")
+    .on("postgres_changes", { event: "*", schema: "public", table: "riders" }, fetch)
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}
+
+export async function reviewDriverDocuments(uid, approved, reason) {
+  const { error } = await supabase.from("drivers").update({
+    documents_status: approved ? "approved" : "rejected",
+    documents_rejection_reason: approved ? null : (reason || "Documents did not meet requirements."),
+    documents_reviewed_at: new Date().toISOString(),
+    ...(approved ? { pending_approval: false } : {}),
+  }).eq("id", uid);
+  if (error) throw error;
+}
+
+export async function scheduleVerificationCall(uid, { scheduledAt, zoomLink }) {
+  const { error } = await supabase.from("drivers").update({
+    documents_status: "call_scheduled",
+    verification_call_at: scheduledAt,
+    verification_zoom_link: zoomLink,
+  }).eq("id", uid);
+  if (error) throw error;
+}
+
+export async function getPendingFlatratePlans() {
+  const { data, error } = await supabase
+    .from("flatrate_plans")
+    .select("*, riders(name, phone)")
+    .eq("status", "pending");
+  if (error) throw error;
+  return data;
+}
+
+export async function approveFlatratePlan(planId, weeklyPrice) {
+  const { error } = await supabase
+    .from("flatrate_plans")
+    .update({ weekly_price: weeklyPrice, status: "active", active: true })
+    .eq("id", planId);
+  if (error) throw error;
+}
+
+export async function rejectFlatratePlan(planId) {
+  const { error } = await supabase
+    .from("flatrate_plans")
+    .update({ status: "rejected" })
+    .eq("id", planId);
+  if (error) throw error;
+}
+
+export async function createAnnouncement({ text, createdBy }) {
+  const base = { created_by: createdBy, active: true, created_at: new Date().toISOString() };
+  // The live app reads the "message" column; older setups used "text".
+  let { error } = await supabase.from("announcements").insert({ ...base, message: text });
+  if (error && /message/i.test(error.message || "")) {
+    ({ error } = await supabase.from("announcements").insert({ ...base, text }));
+  }
+  if (error) throw error;
+}
+
+export async function deactivateAnnouncements(id) {
+  const { error } = await supabase.from("announcements").update({ active: false }).eq("id", id);
   if (error) throw error;
 }
