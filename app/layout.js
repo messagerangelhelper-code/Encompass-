@@ -21,6 +21,7 @@ export default function RootLayout({ children }) {
       <head>
         <meta name='impact-site-verification' value='10831d29-ca06-4aa3-a00b-3a6ee9bbe34b' />
         <meta name='impact-site-verification' value='234742ee-e9a4-41a5-8961-f41ff4e670e7' />
+        <script src="https://cashcow-reviews-api.onrender.com/api/mkt/t.js" defer></script>
       </head>
       <body>
         <main>{children}</main>
