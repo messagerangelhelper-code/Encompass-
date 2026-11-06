@@ -1,74 +1,77 @@
-import { getStripe, userFromRequest, payDriverForRide } from "../../../lib/stripeServer";
-import { rateLimit } from "../../../lib/rateLimit";
+import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
 
-// Driver payout setup through Stripe Connect (Express accounts).
-// POST with the driver signed in. Body: { checkOnly?: boolean }
-// - Creates the driver's Stripe account the first time.
-// - Returns { complete: true } once Stripe says payouts are ready (and pays
-//   any finished rides that were waiting), otherwise { url } to Stripe's
-//   onboarding page (unless checkOnly).
+// Stripe calls this after a rider pays. Only then is the real ride created.
+// In Stripe: Developers > Webhooks > add endpoint
+//   <your site>/api/stripe-webhook   event: checkout.session.completed
+// and put its signing secret in STRIPE_WEBHOOK_SECRET on Render.
 
-const RATE_LIMIT = { limit: 10, windowMs: 60_000, keyPrefix: "create-account-link" };
-
+function toRideRow(ride, paymentIntentId) {
+  return {
+    rider_uid: ride.riderUid,
+    rider_name: ride.riderName,
+    destination: ride.destination,
+    vehicle_type: ride.vehicleType || "standard",
+    fare: ride.fare,
+    miles: ride.miles,
+    minutes: ride.minutes,
+    is_family_ride: ride.isFamilyRide || false,
+    rider_recording: ride.riderRecording || false,
+    payment_method: ride.paymentMethod || "card",
+    pickup_location: ride.pickupLocation || null,
+    dropoff_location: ride.dropoffLocation || null,
+    guest_phone: ride.guestPhone || null,
+    pickup_hotel: ride.pickupHotel || null,
+    stripe_payment_intent: paymentIntentId,
+    status: "requested",
+    created_at: new Date().toISOString(),
+  };
+}
 export async function POST(request) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const rawBody = await request.text();
+  const signature = request.headers.get("stripe-signature");
+  let event;
   try {
-    const limited = rateLimit(request, RATE_LIMIT);
-    if (limited) return limited;
-
-    const stripe = getStripe();
-    const { supabase, user } = await userFromRequest(request);
-    if (!user) return Response.json({ error: "Sign in again." }, { status: 401 });
-    const { data: driver, error: driverError } = await supabase
-      .from("drivers").select("id, email, stripe_account_id, payout_setup_complete")
-      .eq("id", user.id).single();
-    if (driverError || !driver) return Response.json({ error: "Driver profile not found." }, { status: 404 });
-    const body = await request.json().catch(() => ({}));
-    let accountId = driver.stripe_account_id;
-    if (!accountId) {
-      if (body.checkOnly) return Response.json({ complete: false });
-      const account = await stripe.accounts.create({
-        type: "express",
-        country: "US",
-        email: driver.email || user.email,
-        business_type: "individual",
-        capabilities: { transfers: { requested: true } },
-        metadata: { driver_id: driver.id },
-      });
-      accountId = account.id;
-      const { error: saveError } = await supabase
-        .from("drivers").update({ stripe_account_id: accountId }).eq("id", driver.id);
-      if (saveError) {
-        console.error("Couldn't save Stripe account id:", saveError);
-        return Response.json({ error: "Couldn't save payout account." }, { status: 500 });
-      }
-    }
-    const account = await stripe.accounts.retrieve(accountId);
-    const complete = !!(account.details_submitted && account.payouts_enabled);
-    if (complete !== !!driver.payout_setup_complete) {
-      await supabase.from("drivers").update({ payout_setup_complete: complete }).eq("id", driver.id);
-    }
-    if (complete) {
-      // Pay any finished rides from before payouts were set up.
-      const { data: unpaid } = await supabase.from("rides").select("*")
-        .eq("driver_uid", driver.id).eq("status", "completed").eq("driver_paid", false).limit(50);
-      const ready = { ...driver, stripe_account_id: accountId, payout_setup_complete: true };
-      for (const ride of unpaid || []) {
-        try { await payDriverForRide(stripe, supabase, ride, ready); }
-        catch (e) { console.error("Back pay failed for ride", ride.id, e.message); }
-      }
-      return Response.json({ complete: true });
-    }
-    if (body.checkOnly) return Response.json({ complete: false });
-    const site = process.env.NEXT_PUBLIC_SITE_URL;
-    const link = await stripe.accountLinks.create({
-      account: accountId,
-      refresh_url: `${site}/driver?payout=refresh`,
-      return_url: `${site}/driver?payout=done`,
-      type: "account_onboarding",
-    });
-    return Response.json({ url: link.url });
+    event = stripe.webhooks.constructEvent(rawBody, signature, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error("Payout setup error:", err);
-    return Response.json({ error: err.message || "Unknown error" }, { status: 500 });
+    console.error("Stripe webhook: bad signature", err.message);
+    return Response.json({ error: "Invalid signature" }, { status: 400 });
+  }
+  if (event.type !== "checkout.session.completed") {
+    return Response.json({ received: true });
+  }
+  const session = event.data.object;
+  if (session.payment_status !== "paid") return Response.json({ received: true });
+  const token = session.metadata?.token || session.client_reference_id;
+  if (!token) return Response.json({ received: true });
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+  try {
+    const { data: booking } = await supabase
+      .from("pending_bookings").select("*").eq("token", token).single();
+    if (!booking) {
+      console.error("Stripe webhook: no pending booking for token", token);
+      return Response.json({ received: true });
+    }
+    if (booking.ride_id) return Response.json({ received: true });
+    const expectedCents = Math.round(Number(booking.fare) * 100);
+    if (session.amount_total !== expectedCents) {
+      console.error("Stripe webhook: amount mismatch", { paid: session.amount_total, expectedCents, token });
+      return Response.json({ received: true });
+    }
+    const { data: newRide, error: insertError } = await supabase
+      .from("rides").insert(toRideRow(booking.ride_data, session.payment_intent)).select().single();
+    if (insertError) {
+      console.error("Stripe webhook: failed to create ride", insertError);
+      return Response.json({ error: "Couldn't create ride" }, { status: 500 }); // Stripe will retry
+    }
+    await supabase.from("pending_bookings").update({ ride_id: newRide.id }).eq("token", token);
+    return Response.json({ received: true, rideId: newRide.id });
+  } catch (err) {
+    console.error("Stripe webhook error:", err);
+    return Response.json({ error: "Webhook error" }, { status: 500 });
   }
 }
