@@ -1,3 +1,59 @@
+import Stripe from "stripe";
+import { createClient } from "@supabase/supabase-js";
+import { rateLimit } from "../../../lib/rateLimit";
+
+// Creates a Stripe Checkout page for one ride. Nothing is written to the
+// real `rides` table here: the ride is only created by /api/stripe-webhook
+// once Stripe confirms the payment, so drivers never see an unpaid ride.
+
+const RATE_LIMIT = { limit: 8, windowMs: 60_000, keyPrefix: "create-checkout" };
+const MAX_FARE_USD = 2000;
+
+export async function POST(request) {
+  try {
+    const limited = rateLimit(request, RATE_LIMIT);
+    if (limited) return limited;
+
+    if (!process.env.STRIPE_SECRET_KEY) {
+      return Response.json({ error: "Payments aren't set up yet." }, { status: 500 });
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    );
+    const body = await request.json();
+    const fare = Number(body.fare);
+    if (!fare || fare <= 0 || fare > MAX_FARE_USD) {
+      return Response.json({ error: "Invalid fare amount" }, { status: 400 });
+    }
+    const amountInCents = Math.round(fare * 100);
+    const token = crypto.randomUUID();
+    const rideData = {
+      riderName: body.riderName || "Rider",
+      riderUid: body.riderUid || crypto.randomUUID(),
+      destination: body.destination || "",
+      fare,
+      miles: body.miles || 0,
+      minutes: body.minutes || 0,
+      vehicleType: body.vehicleType || "standard",
+      isFamilyRide: !!body.isFamilyRide,
+      riderRecording: !!body.riderRecording,
+      paymentMethod: "card",
+      pickupLocation: body.pickupLat != null ? { lat: body.pickupLat, lng: body.pickupLng } : null,
+      dropoffLocation: body.dropoffLat != null ? { lat: body.dropoffLat, lng: body.dropoffLng } : null,
+      guestPhone: body.guestPhone || null,
+      pickupHotel: body.pickupHotel || null,
+    };
+    const { error: insertError } = await supabase.from("pending_bookings").insert({
+      token, ride_data: rideData, fare,
+    });
+    if (insertError) {
+      console.error("Pending booking insert error:", insertError);
+      return Response.json({ error: "Couldn't set up booking" }, { status: 500 });
+    }
+    const site = process.env.NEXT_PUBLIC_SITE_URL;
+    const returnTo = body.returnTo === "/hotel" ? "/hotel" : "/rider";
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{
@@ -14,7 +70,6 @@
       success_url: `${site}${returnTo}?payment=pending&token=${token}`,
       cancel_url: `${site}${returnTo}`,
     });
-
     return Response.json({ url: session.url });
   } catch (err) {
     console.error("Checkout error:", err);
