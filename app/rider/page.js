@@ -26,7 +26,6 @@ async function searchPlaces(query, near) {
   const data = await res.json();
   return (data.features || []).map((f) => ({ lat: f.center[1], lng: f.center[0], name: f.text, label: f.place_name }));
 }
-
 async function placeName(pos) {
   try {
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${pos.lng},${pos.lat}.json?access_token=${TOKEN}&limit=1&types=address,poi`;
@@ -36,7 +35,6 @@ async function placeName(pos) {
     return "Current location";
   }
 }
-
 async function drivingRoute(a, b) {
   const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${a.lng},${a.lat};${b.lng},${b.lat}?access_token=${TOKEN}&overview=false`;
   const res = await fetch(url);
@@ -45,24 +43,19 @@ async function drivingRoute(a, b) {
   if (!route) throw new Error("No driving route found to that place.");
   return { miles: Math.round((route.distance / 1609.34) * 10) / 10, minutes: Math.max(1, Math.round(route.duration / 60)) };
 }
-
 const short = (label) => String(label || "").split(",").slice(0, 2).join(",");
-
 // ---------- Address box with suggestions ----------
 function PlaceInput({ icon: Icon, iconColor, placeholder, value, onPick, near, autoFocus, extra }) {
   const [text, setText] = useState(value?.label ? short(value.label) : "");
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const timer = useRef(null);
-
   useEffect(() => { setText(value?.label ? short(value.label) : ""); }, [value?.label]);
-
   const onType = (v) => {
     setText(v); setOpen(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => setResults(await searchPlaces(v, near)), 300);
   };
-
   return (
     <div className="relative">
       <div className="flex items-center gap-2 px-3 rounded-xl" style={{ background: CARD, border: `1px solid ${LINE}` }}>
@@ -94,7 +87,6 @@ function PlaceInput({ icon: Icon, iconColor, placeholder, value, onPick, near, a
     </div>
   );
 }
-
 // ---------- Sign in ----------
 function SignIn() {
   const [email, setEmail] = useState("");
@@ -134,7 +126,6 @@ function SignIn() {
     </main>
   );
 }
-
 // ---------- Book a ride ----------
 function BookRide({ rider, onBooked }) {
   const [pickup, setPickup] = useState(null);
@@ -145,7 +136,6 @@ function BookRide({ rider, onBooked }) {
   const [vehicle, setVehicle] = useState("standard");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
   const useMyLocation = () => {
     if (!("geolocation" in navigator)) { setError("This phone can't share its location. Type your pickup address instead."); return; }
     setLocating(true); setError("");
@@ -160,20 +150,15 @@ function BookRide({ rider, onBooked }) {
       { enableHighAccuracy: true, timeout: 10000 }
     );
   };
-
   useEffect(() => { useMyLocation(); }, []);   // start with where they are
-
   useEffect(() => {
     setTrip(null);
     if (!pickup || !dropoff) return;
     setError("");
     drivingRoute(pickup, dropoff).then(setTrip).catch((e) => setError(e.message));
   }, [pickup?.lat, pickup?.lng, dropoff?.lat, dropoff?.lng]);
-
-  const base = trip ? fareForTrip(trip.miles, trip.minutes) : 0;
-  const priceFor = (v) => Math.round(base * v.multiplier * 100) / 100;
+  const priceFor = (v) => (trip ? fareForTrip(trip.miles, trip.minutes, v.multiplier) : 0);
   const chosen = VEHICLE_TYPES.find((v) => v.id === vehicle) || VEHICLE_TYPES[0];
-
   // The ride is NOT created here. The rider pays on Stripe first; once Stripe
   // confirms the payment, the webhook creates the ride and drivers can see it.
   const request = async () => {
@@ -205,9 +190,7 @@ function BookRide({ rider, onBooked }) {
     }
     setBusy(false);
   };
-
   const firstName = String(rider.name || "").split(/[ .@]/)[0];
-
   return (
     <main className="relative w-full h-screen max-w-md mx-auto overflow-hidden" style={{ background: DARK }}>
       <div className="absolute inset-0"><CityMap pickupPos={pickup} dropoffPos={dropoff} showRoute={!!(pickup && dropoff)} /></div>
@@ -224,10 +207,8 @@ function BookRide({ rider, onBooked }) {
             } />
           <PlaceInput icon={Search} iconColor={AMBER} placeholder="Where are you going?" value={dropoff} onPick={setDropoff} near={near || pickup} />
         </div>
-
         {error && <p className="text-sm mt-3" style={{ color: "#FF6B6B" }}>{error}</p>}
         {pickup && dropoff && !trip && !error && <p className="text-sm mt-3" style={{ color: MUTED }}>Working out the price…</p>}
-
         {trip && (
           <>
             <p className="text-xs uppercase tracking-wide mt-4 mb-2" style={{ color: MUTED }}>{trip.miles} mi · about {trip.minutes} min · choose a ride</p>
@@ -258,7 +239,6 @@ function BookRide({ rider, onBooked }) {
     </main>
   );
 }
-
 // ---------- Following the ride ----------
 const STATUS = {
   requested: { title: "Finding your driver…", note: "Hang tight, we're matching you with a driver nearby." },
@@ -268,7 +248,6 @@ const STATUS = {
   completed: { title: "You've arrived", note: "How was your ride?" },
   cancelled: { title: "This ride was cancelled", note: "Your payment has been refunded. You can request again." },
 };
-
 function TrackRide({ ride, onDone }) {
   const [showChat, setShowChat] = useState(false);
   const [rated, setRated] = useState(0);
@@ -284,7 +263,6 @@ function TrackRide({ ride, onDone }) {
         <p className="text-lg font-semibold" style={{ color: TEXT }}>{s.title}</p>
         {s.note && <p className="text-sm mt-1" style={{ color: MUTED }}>{s.note}</p>}
         <p className="text-sm mt-1" style={{ color: MUTED }}>To {ride.destination || "your destination"} · ${Number(ride.fare || 0).toFixed(2)}</p>
-
         {ride.driver_name && (
           <div className="mt-4 rounded-xl p-3 flex items-center justify-between" style={{ background: CARD, border: `1px solid ${LINE}` }}>
             <div>
@@ -298,14 +276,12 @@ function TrackRide({ ride, onDone }) {
             )}
           </div>
         )}
-
         {ride.status === "requested" && (
           <button onClick={async () => { const r = await authPost("/api/cancel-ride", { rideId: ride.id }); if (r.cancelled) onDone(); else alert(r.error || "Couldn't cancel this ride."); }}
             className="w-full mt-4 py-3 rounded-xl text-sm font-medium" style={{ background: CARD, color: "#FF6B6B", border: `1px solid ${LINE}` }}>
             Cancel request
           </button>
         )}
-
         {ride.status === "completed" && (
           <div className="mt-4">
             <div className="flex justify-center gap-2">
@@ -319,7 +295,6 @@ function TrackRide({ ride, onDone }) {
             {rated > 0 && <p className="text-sm text-center mt-2" style={{ color: ACCENT }}>Thanks for rating your driver!</p>}
           </div>
         )}
-
         {(ride.status === "completed" || ride.status === "cancelled") && (
           <button onClick={onDone} className="w-full mt-4 py-4 rounded-xl text-base font-semibold" style={{ background: ACCENT, color: DARK }}>
             {ride.status === "cancelled" ? "Request again" : "Book another ride"}
@@ -333,18 +308,15 @@ function TrackRide({ ride, onDone }) {
     </main>
   );
 }
-
 export default function RiderPage() {
   const [rider, setRider] = useState(null);
   const [checking, setChecking] = useState(true);
   const [ride, setRide] = useState(null);
   const [paying, setPaying] = useState(false);
   const [payError, setPayError] = useState("");
-
   useEffect(() => {
     completeMagicLinkSignInRider().then((r) => { if (r) setRider(r); }).catch(() => {}).finally(() => setChecking(false));
   }, []);
-
   // Coming back from Stripe: wait for the webhook to confirm the payment and
   // create the ride, then start following it.
   useEffect(() => {
@@ -374,12 +346,10 @@ export default function RiderPage() {
     poll();
     return () => { stopped = true; };
   }, []);
-
   useEffect(() => {
     if (!ride?.id) return;
     return subscribeToRide(ride.id, (fresh) => setRide((old) => ({ ...old, ...fresh })));
   }, [ride?.id]);
-
   if (checking) return <main className="min-h-screen" style={{ background: DARK }} />;
   if (paying) {
     return (
